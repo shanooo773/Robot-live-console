@@ -1,30 +1,30 @@
 import { useRef, useState } from "react";
 import { Box, HStack } from "@chakra-ui/react";
 import { Editor } from "@monaco-editor/react";
-import LanguageSelector from "./LanguageSelector";
-import { CODE_SNIPPETS } from "../constants";
-import Output from "./Output";
+import RobotSelector from "./RobotSelector";
+import { ROBOT_CODE_SNIPPETS } from "../constants";
+import VideoPlayer from "./VideoPlayer";
 
 const CodeEditor = () => {
   const editorRef = useRef();
   const [value, setValue] = useState("");
-  const [language, setLanguage] = useState("javascript");
+  const [robot, setRobot] = useState("turtlebot");
 
   const onMount = (editor) => {
     editorRef.current = editor;
     editor.focus();
   };
 
-  const onSelect = (language) => {
-    setLanguage(language);
-    setValue(CODE_SNIPPETS[language]);
+  const onSelect = (robotType) => {
+    setRobot(robotType);
+    setValue(ROBOT_CODE_SNIPPETS[robotType]);
   };
 
   return (
     <Box>
       <HStack spacing={4}>
         <Box w="50%">
-          <LanguageSelector language={language} onSelect={onSelect} />
+          <RobotSelector robot={robot} onSelect={onSelect} />
           <Editor
             options={{
               minimap: {
@@ -33,14 +33,14 @@ const CodeEditor = () => {
             }}
             height="75vh"
             theme="vs-dark"
-            language={language}
-            defaultValue={CODE_SNIPPETS[language]}
+            language="python"
+            defaultValue={ROBOT_CODE_SNIPPETS[robot]}
             onMount={onMount}
             value={value}
             onChange={(value) => setValue(value)}
           />
         </Box>
-        <Output editorRef={editorRef} language={language} />
+        <VideoPlayer editorRef={editorRef} robot={robot} />
       </HStack>
     </Box>
   );
