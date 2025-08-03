@@ -1,7 +1,16 @@
 import os
 import uuid
 import asyncio
-import docker
+import platform
+import urllib.parse
+import subprocess
+import json
+try:
+    import docker
+    DOCKER_SDK_AVAILABLE = True
+except ImportError:
+    docker = None
+    DOCKER_SDK_AVAILABLE = False
 import aiofiles
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +20,6 @@ from pydantic import BaseModel
 from typing import Optional
 import logging
 from pathlib import Path
-import docker
 import time
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,15 +43,233 @@ VIDEOS_DIR.mkdir(exist_ok=True)
 # Mount static files for video serving
 app.mount("/videos", StaticFiles(directory="videos"), name="videos")
 
+class DockerClientWrapper:
+    """
+    A wrapper class that provides Docker functionality using either the Docker SDK 
+    or the Docker CLI, providing fallback options for different environments.
+    """
+    
+    def __init__(self):
+        self.client = None
+        self.use_cli = False
+        
+    def _test_docker_cli(self):
+        """Test if Docker CLI is available and working"""
+        try:
+            result = subprocess.run(['docker', 'version'], 
+                                 capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                return True
+        except Exception:
+            pass
+        return False
+    
+    def _test_docker_sdk(self, base_url=None):
+        """Test if Docker SDK can connect"""
+        if not DOCKER_SDK_AVAILABLE:
+            return None
+        try:
+            if base_url:
+                client = docker.DockerClient(base_url=base_url)
+            else:
+                client = docker.from_env()
+            client.ping()
+            return client
+        except Exception:
+            return None
+    
+    def ping(self):
+        """Test Docker connection"""
+        if self.client:
+            try:
+                return self.client.ping()
+            except:
+                pass
+        
+        if self.use_cli:
+            try:
+                result = subprocess.run(['docker', 'version'], 
+                                     capture_output=True, text=True, timeout=10)
+                return result.returncode == 0
+            except:
+                return False
+        
+        return False
+    
+    def containers(self):
+        """Get container manager"""
+        if self.client:
+            return self.client.containers
+        else:
+            return DockerContainerManager()
+
+class DockerContainerManager:
+    """Container manager that uses Docker CLI"""
+    
+    def list(self):
+        """List containers using Docker CLI"""
+        try:
+            result = subprocess.run(['docker', 'ps', '--format', 'json'], 
+                                 capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                containers = []
+                for line in result.stdout.strip().split('\n'):
+                    if line:
+                        container_info = json.loads(line)
+                        containers.append(DockerContainer(container_info))
+                return containers
+        except Exception as e:
+            logger.error(f"Failed to list containers via CLI: {e}")
+        return []
+    
+    def run(self, image, **kwargs):
+        """Run container using Docker CLI"""
+        cmd = ['docker', 'run']
+        
+        # Handle common kwargs
+        if kwargs.get('name'):
+            cmd.extend(['--name', kwargs['name']])
+        if kwargs.get('detach'):
+            cmd.append('-d')
+        if kwargs.get('remove'):
+            cmd.append('--rm')
+        if kwargs.get('volumes'):
+            for host_path, container_config in kwargs['volumes'].items():
+                bind_path = container_config['bind']
+                mode = container_config.get('mode', 'rw')
+                cmd.extend(['-v', f"{host_path}:{bind_path}:{mode}"])
+        if kwargs.get('environment'):
+            for key, value in kwargs['environment'].items():
+                cmd.extend(['-e', f"{key}={value}"])
+        if kwargs.get('working_dir'):
+            cmd.extend(['-w', kwargs['working_dir']])
+        if kwargs.get('mem_limit'):
+            cmd.extend(['--memory', kwargs['mem_limit']])
+        if kwargs.get('cpu_quota'):
+            cpu_limit = kwargs['cpu_quota'] / 100000  # Convert to decimal
+            cmd.extend(['--cpus', str(cpu_limit)])
+        if kwargs.get('network_mode') == 'none':
+            cmd.extend(['--network', 'none'])
+        
+        cmd.append(image)
+        
+        if kwargs.get('command'):
+            if isinstance(kwargs['command'], list):
+                cmd.extend(kwargs['command'])
+            else:
+                cmd.append(kwargs['command'])
+        
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            if result.returncode == 0:
+                container_id = result.stdout.strip()
+                return DockerContainer({'ID': container_id})
+            else:
+                raise Exception(f"Docker run failed: {result.stderr}")
+        except Exception as e:
+            logger.error(f"Failed to run container via CLI: {e}")
+            raise
+
+class DockerContainer:
+    """Container representation for CLI-based Docker operations"""
+    
+    def __init__(self, container_info):
+        self.info = container_info
+        self.name = container_info.get('Names', container_info.get('ID', ''))
+        self.id = container_info.get('ID', '')
+    
+    def wait(self, timeout=None):
+        """Wait for container to complete"""
+        try:
+            cmd = ['docker', 'wait', self.id]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            if result.returncode == 0:
+                exit_code = int(result.stdout.strip())
+                return {'StatusCode': exit_code}
+            else:
+                return {'StatusCode': -1}
+        except subprocess.TimeoutExpired:
+            return {'StatusCode': -1}
+        except Exception:
+            return {'StatusCode': -1}
+    
+    def logs(self):
+        """Get container logs"""
+        try:
+            cmd = ['docker', 'logs', self.id]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            return result.stdout.encode('utf-8')
+        except Exception:
+            return b''
+
+def create_docker_client():
+    """
+    Create a Docker client that works across different platforms (Linux, Windows, WSL2).
+    This function handles the various ways Docker can be accessed depending on the environment.
+    """
+    wrapper = DockerClientWrapper()
+    
+    # Get the current operating system
+    system = platform.system().lower()
+    
+    # First, try to detect if we're in WSL by checking for WSL environment indicators
+    is_wsl = False
+    if system == "linux":
+        try:
+            with open("/proc/version", "r") as f:
+                if "microsoft" in f.read().lower():
+                    is_wsl = True
+        except:
+            pass
+    
+    # Try different connection methods in order of preference
+    connection_methods = []
+    
+    if system == "windows":
+        # Windows - use named pipe
+        connection_methods.append(("Windows named pipe", 'npipe:////./pipe/docker_engine'))
+    elif is_wsl:
+        # WSL environment - try TCP connection, then Unix socket
+        connection_methods.extend([
+            ("WSL TCP connection", 'tcp://localhost:2375'),
+            ("WSL Unix socket", 'unix:///var/run/docker.sock')
+        ])
+    else:
+        # Standard Linux - use Unix socket
+        connection_methods.append(("Linux Unix socket", 'unix:///var/run/docker.sock'))
+    
+    # Try each SDK connection method
+    for method_name, base_url in connection_methods:
+        client = wrapper._test_docker_sdk(base_url)
+        if client:
+            logger.info(f"Successfully connected to Docker using {method_name}")
+            wrapper.client = client
+            return wrapper
+    
+    # Try docker.from_env() as fallback
+    client = wrapper._test_docker_sdk()
+    if client:
+        logger.info("Successfully connected to Docker using docker.from_env()")
+        wrapper.client = client
+        return wrapper
+    
+    # If SDK methods fail, try Docker CLI
+    if wrapper._test_docker_cli():
+        logger.info("Docker SDK failed, but Docker CLI is available - using CLI fallback")
+        wrapper.use_cli = True
+        return wrapper
+    
+    # If all methods fail, return None
+    logger.error("All Docker connection methods failed")
+    return None
+
 # Docker client
 try:
-    docker_client = docker.DockerClient(
-        base_url='npipe:////./pipe/docker_engine',
-        version='1.43'  # safest common API version; adjust if needed
-    )
-    docker_client.ping()
-except docker.errors.DockerException as e:
-    print("Docker not available:", e)
+    docker_client = create_docker_client()
+    if docker_client is None:
+        raise Exception("Could not establish Docker connection")
+except Exception as e:
+    logger.error(f"Docker initialization failed: {e}")
     docker_client = None
 
 @app.get("/status")
@@ -54,8 +280,19 @@ def get_status():
 def get_docker_status():
     if docker_client:
         try:
-            containers = docker_client.containers.list()
-            return {"status": "Docker is running", "containers": [c.name for c in containers]}
+            containers = docker_client.containers().list()
+            container_names = []
+            for container in containers:
+                if hasattr(container, 'name'):
+                    container_names.append(container.name)
+                elif hasattr(container, 'info'):
+                    # CLI-based container
+                    container_names.append(container.info.get('Names', container.info.get('ID', 'unknown')))
+                else:
+                    # SDK-based container
+                    container_names.append(getattr(container, 'name', 'unknown'))
+            
+            return {"status": "Docker is running", "containers": container_names}
         except Exception as e:
             return {"status": "Docker error", "error": str(e)}
     else:
@@ -223,9 +460,21 @@ async def startup_event():
     
     # Check if Docker image exists
     try:
-        docker_client.images.get("robot-simulation:latest")
-        logger.info("Docker image 'robot-simulation:latest' found")
-    except docker.errors.ImageNotFound:
+        if docker_client and hasattr(docker_client, 'client') and docker_client.client:
+            docker_client.client.images.get("robot-simulation:latest")
+            logger.info("Docker image 'robot-simulation:latest' found")
+        elif docker_client and docker_client.use_cli:
+            # Use CLI to check for image
+            result = subprocess.run(['docker', 'images', '-q', 'robot-simulation:latest'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0 and result.stdout.strip():
+                logger.info("Docker image 'robot-simulation:latest' found via CLI")
+            else:
+                logger.warning("Docker image 'robot-simulation:latest' not found via CLI")
+        else:
+            logger.warning("Docker not available - cannot check for image")
+    except Exception as e:
+        logger.warning(f"Could not check for Docker image: {e}")
         logger.warning("Docker image 'robot-simulation:latest' not found. Please build it using the setup script.")
 
 if __name__ == "__main__":
