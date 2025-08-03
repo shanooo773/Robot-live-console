@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Arguments -->
+  <arg name="robot_type" default="arm"/>
+  <arg name="urdf_file" default=""/>
+  <arg name="world_file" default=""/>
+  <arg name="x" default="0"/>
+  <arg name="y" default="0"/>
+  <arg name="z" default="0"/>
+  <arg name="roll" default="0"/>
+  <arg name="pitch" default="0"/>
+  <arg name="yaw" default="0"/>
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="false"/>
+  <arg name="headless" default="true"/>
+  <arg name="debug" default="false"/>
+  <arg name="verbose" default="false"/>
+
+  <!-- Set use_sim_time parameter -->
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+  <!-- Start Gazebo with specified world -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_file)" if="$(eval world_file != '')"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="headless" value="$(arg headless)"/>
+    <arg name="debug" value="$(arg debug)"/>
+    <arg name="verbose" value="$(arg verbose)"/>
+  </include>
+
+  <!-- Load robot description to parameter server -->
+  <param name="robot_description" textfile="$(arg urdf_file)" if="$(eval urdf_file != '')"/>
+
+  <!-- Spawn robot in Gazebo -->
+  <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" 
+        args="-param robot_description -urdf -model robot -x $(arg x) -y $(arg y) -z $(arg z) 
+              -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)" 
+        output="screen" if="$(eval urdf_file != '')"/>
+
+  <!-- Robot state publisher -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" 
+        output="screen" if="$(eval urdf_file != '')"/>
+
+  <!-- Joint state publisher -->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" 
+        output="screen" if="$(eval urdf_file != '')"/>
+
+  <!-- Load controllers for arm robot -->
+  <group if="$(eval robot_type == 'arm')">
+    <rosparam file="/opt/simulation/robots/arm/controllers.yaml" command="load" 
+              if="$(eval urdf_file != '')"/>
+    
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+          output="screen" args="joint_state_controller
+                                joint1_position_controller
+                                joint2_position_controller" 
+          if="$(eval urdf_file != '')"/>
+  </group>
+
+  <!-- Load controllers for hand robot -->
+  <group if="$(eval robot_type == 'hand')">
+    <rosparam file="/opt/simulation/robots/hand/controllers.yaml" command="load" 
+              if="$(eval urdf_file != '')"/>
+    
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+          output="screen" args="joint_state_controller
+                                finger1_position_controller
+                                finger2_position_controller
+                                thumb_position_controller" 
+          if="$(eval urdf_file != '')"/>
+  </group>
+
+  <!-- Load controllers for turtlebot -->
+  <group if="$(eval robot_type == 'turtlebot')">
+    <rosparam file="/opt/simulation/robots/turtlebot/controllers.yaml" command="load" 
+              if="$(eval urdf_file != '')"/>
+    
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+          output="screen" args="joint_state_controller
+                                diff_drive_controller" 
+          if="$(eval urdf_file != '')"/>
+  </group>
+
+</launch>
