@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Default values
 BACKEND_PORT=8000
-FRONTEND_PORT=3000
+FRONTEND_PORT=5173  # Vite default port
 DOCKER_IMAGE_NAME="robot-simulation"
 DOCKER_TAG="latest"
 
@@ -38,6 +38,86 @@ print_error() {
 # Function to check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
+}
+
+# Function to check if port is open (cross-platform)
+is_port_open() {
+    local port=$1
+    local host=${2:-localhost}
+    
+    # Try multiple methods for cross-platform compatibility
+    
+    # Method 1: Use curl (most reliable for HTTP services)
+    if command_exists curl; then
+        if curl -s --connect-timeout 2 "http://${host}:${port}/" > /dev/null 2>&1; then
+            return 0
+        fi
+    fi
+    
+    # Method 2: Use netcat if available
+    if command_exists nc; then
+        if nc -z "${host}" "${port}" 2>/dev/null; then
+            return 0
+        fi
+    fi
+    
+    # Method 3: Use telnet as fallback (Windows compatible)
+    if command_exists telnet; then
+        if timeout 2 telnet "${host}" "${port}" 2>/dev/null | grep -q "Connected\|Escape character"; then
+            return 0
+        fi
+    fi
+    
+    # Method 4: Check if something is listening on the port using netstat/ss
+    if command_exists netstat; then
+        if netstat -an 2>/dev/null | grep -q ":${port}.*LISTEN"; then
+            return 0
+        fi
+    elif command_exists ss; then
+        if ss -ln 2>/dev/null | grep -q ":${port}.*LISTEN"; then
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+# Function to wait for service with better logging
+wait_for_service() {
+    local service_name=$1
+    local port=$2
+    local timeout=${3:-30}
+    local host=${4:-localhost}
+    
+    print_status "Waiting for ${service_name} to start on port ${port}..."
+    
+    for i in $(seq 1 $timeout); do
+        if is_port_open "$port" "$host"; then
+            print_success "${service_name} started successfully on port ${port}"
+            return 0
+        fi
+        
+        # More verbose logging every 5 seconds
+        if [ $((i % 5)) -eq 0 ]; then
+            print_status "Still waiting for ${service_name}... (${i}/${timeout}s)"
+        fi
+        
+        sleep 1
+    done
+    
+    print_error "${service_name} failed to start within ${timeout} seconds"
+    print_status "Debugging info:"
+    print_status "- Checking if port ${port} is open..."
+    if command_exists netstat; then
+        print_status "- Active connections on port ${port}:"
+        netstat -an 2>/dev/null | grep ":${port}" || echo "  No connections found"
+    fi
+    if command_exists lsof; then
+        print_status "- Processes using port ${port}:"
+        lsof -i ":${port}" 2>/dev/null || echo "  No processes found"
+    fi
+    
+    return 1
 }
 
 # Function to check system requirements
@@ -93,6 +173,12 @@ load_env() {
 
 # Function to build Docker image
 build_docker_image() {
+    # Skip Docker build if SKIP_DOCKER environment variable is set
+    if [ "$SKIP_DOCKER" = "1" ] || [ "$SKIP_DOCKER" = "true" ]; then
+        print_warning "Skipping Docker build (SKIP_DOCKER is set)"
+        return 0
+    fi
+    
     print_status "Building Docker image for ROS simulation..."
     
     if docker images | grep -q "${DOCKER_IMAGE_NAME}.*${DOCKER_TAG}"; then
@@ -131,7 +217,17 @@ setup_backend() {
     
     # Activate virtual environment and install dependencies
     print_status "Installing Python dependencies..."
-    source venv/Scripts/activate
+    # Cross-platform virtual environment activation
+    if [ -f "venv/Scripts/activate" ]; then
+        # Windows style
+        source venv/Scripts/activate
+    elif [ -f "venv/bin/activate" ]; then
+        # Unix style
+        source venv/bin/activate
+    else
+        print_error "Could not find virtual environment activation script"
+        exit 1
+    fi
     pip install -r requirements.txt
     
     # Create necessary directories
@@ -160,7 +256,17 @@ start_backend() {
     print_status "Starting FastAPI backend server..."
     
     cd backend
-    source venv/Scripts/activate
+    # Cross-platform virtual environment activation
+    if [ -f "venv/Scripts/activate" ]; then
+        # Windows style
+        source venv/Scripts/activate
+    elif [ -f "venv/bin/activate" ]; then
+        # Unix style
+        source venv/bin/activate
+    else
+        print_error "Could not find virtual environment activation script"
+        exit 1
+    fi
 
     
     # Start backend in background
@@ -170,18 +276,13 @@ start_backend() {
     
     cd ..
     
-    # Wait for backend to start
-    print_status "Waiting for backend to start..."
-    for i in {1..30}; do
-        if curl -s http://localhost:${BACKEND_PORT}/ > /dev/null; then
-            print_success "Backend started successfully on port ${BACKEND_PORT}"
-            return 0
-        fi
-        sleep 1
-    done
+    # Wait for backend to start with improved detection
+    if ! wait_for_service "Backend" "$BACKEND_PORT" 30; then
+        print_error "Backend startup failed. Check backend/backend.log for details."
+        return 1
+    fi
     
-    print_error "Backend failed to start within 30 seconds"
-    return 1
+    return 0
 }
 
 # Function to start frontend server
@@ -197,18 +298,37 @@ start_frontend() {
     
     cd ..
     
-    # Wait for frontend to start
-    print_status "Waiting for frontend to start..."
-    for i in {1..30}; do
-        if curl -s http://localhost:${FRONTEND_PORT}/ > /dev/null; then
-            print_success "Frontend started successfully on port ${FRONTEND_PORT}"
-            return 0
-        fi
-        sleep 1
-    done
+    # Wait a moment for Vite to start and create log
+    sleep 3
     
-    print_error "Frontend failed to start within 30 seconds"
-    return 1
+    # Try to extract the actual port from the Vite log
+    actual_port="$FRONTEND_PORT"
+    if [ -f frontend/frontend.log ]; then
+        # Look for "Local: http://localhost:XXXX/" in the log
+        detected_port=$(grep -o "Local:.*http://localhost:[0-9]*/" frontend/frontend.log | grep -o "[0-9]*" | head -1)
+        if [ -n "$detected_port" ]; then
+            actual_port="$detected_port"
+            if [ "$actual_port" != "$FRONTEND_PORT" ]; then
+                print_warning "Vite started on port ${actual_port} instead of ${FRONTEND_PORT}"
+            fi
+        fi
+    fi
+    
+    # Wait for frontend to start with improved detection and longer timeout for Vite
+    # Vite can take longer to start, especially on first run
+    if ! wait_for_service "Frontend (Vite)" "$actual_port" 60; then
+        print_error "Frontend startup failed. Check frontend/frontend.log for details."
+        print_status "Vite output from log:"
+        if [ -f frontend/frontend.log ]; then
+            tail -20 frontend/frontend.log
+        fi
+        return 1
+    fi
+    
+    # Update the FRONTEND_PORT variable for subsequent use
+    FRONTEND_PORT="$actual_port"
+    
+    return 0
 }
 
 # Function to stop servers
@@ -254,14 +374,14 @@ show_status() {
     print_status "Checking server status..."
     
     # Check backend
-    if curl -s http://localhost:${BACKEND_PORT}/ > /dev/null; then
+    if is_port_open "$BACKEND_PORT"; then
         print_success "Backend is running on http://localhost:${BACKEND_PORT}"
     else
         print_warning "Backend is not running"
     fi
     
     # Check frontend
-    if curl -s http://localhost:${FRONTEND_PORT}/ > /dev/null; then
+    if is_port_open "$FRONTEND_PORT"; then
         print_success "Frontend is running on http://localhost:${FRONTEND_PORT}"
     else
         print_warning "Frontend is not running"
