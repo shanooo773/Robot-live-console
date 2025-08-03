@@ -65,7 +65,7 @@ check_requirements() {
     fi
     
     # Check Python3
-    if ! command_exists python3; then
+    if ! command_exists python; then
         print_error "Python 3 is not installed. Please install Python 3 first."
         exit 1
     fi
@@ -126,12 +126,12 @@ setup_backend() {
     # Create virtual environment if it doesn't exist
     if [ ! -d "venv" ]; then
         print_status "Creating Python virtual environment..."
-        python3 -m venv venv
+        python -m venv venv
     fi
     
     # Activate virtual environment and install dependencies
     print_status "Installing Python dependencies..."
-    source venv/bin/activate
+    source venv/Scripts/activate
     pip install -r requirements.txt
     
     # Create necessary directories
@@ -160,7 +160,8 @@ start_backend() {
     print_status "Starting FastAPI backend server..."
     
     cd backend
-    source venv/bin/activate
+    source venv/Scripts/activate
+
     
     # Start backend in background
     nohup python main.py > backend.log 2>&1 &

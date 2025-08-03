@@ -11,7 +11,8 @@ from pydantic import BaseModel
 from typing import Optional
 import logging
 from pathlib import Path
-
+import docker
+import time
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,8 +36,30 @@ VIDEOS_DIR.mkdir(exist_ok=True)
 app.mount("/videos", StaticFiles(directory="videos"), name="videos")
 
 # Docker client
-docker_client = docker.from_env()
+try:
+    docker_client = docker.DockerClient(
+        base_url='npipe:////./pipe/docker_engine',
+        version='1.43'  # safest common API version; adjust if needed
+    )
+    docker_client.ping()
+except docker.errors.DockerException as e:
+    print("Docker not available:", e)
+    docker_client = None
 
+@app.get("/status")
+def get_status():
+    return {"status": "Backend is running"}
+
+@app.get("/docker-status")
+def get_docker_status():
+    if docker_client:
+        try:
+            containers = docker_client.containers.list()
+            return {"status": "Docker is running", "containers": [c.name for c in containers]}
+        except Exception as e:
+            return {"status": "Docker error", "error": str(e)}
+    else:
+        return {"status": "Docker not available"}
 class CodeExecutionRequest(BaseModel):
     code: str
     robot_type: str
@@ -161,7 +184,7 @@ async def run_simulation_in_docker(execution_id: str, robot_type: str, code_file
             working_dir="/workspace",
             command=[
                 "bash", "-c", 
-                f"python3 /opt/simulation/run_simulation.py --robot-type {robot_type} --code-file user_code.py --output-video {video_output_path}"
+                f"python /opt/simulation/run_simulation.py --robot-type {robot_type} --code-file user_code.py --output-video {video_output_path}"
             ],
             detach=True,
             mem_limit="2g",
