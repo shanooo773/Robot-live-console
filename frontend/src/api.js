@@ -64,3 +64,8 @@ export const getExecutionLogs = async (executionId) => {
   const response = await API.get(`/execution-logs/${executionId}`);
   return response.data;
 };
+
+export const cleanupContainers = async () => {
+  const response = await API.post("/cleanup-containers");
+  return response.data;
+};
