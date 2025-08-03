@@ -559,6 +559,7 @@ if __name__ == '__main__':
             urdf_path=str(urdf_path),
             world_path=str(world_path),
             code_file=str(code_file),
+            robot_type=robot_type,
             duration=request.duration
         )
         
@@ -757,7 +758,7 @@ app.mount("/videos", StaticFiles(directory="videos"), name="videos")
 VIDEOS_DIR = Path(__file__).parent / "videos"
 VIDEOS_DIR.mkdir(exist_ok=True)
 
-async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world_path: str, code_file: str, duration: int = 10) -> str:
+async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world_path: str, code_file: str, robot_type: str, duration: int = 10) -> str:
     """Run the real ROS/Gazebo simulation inside a Docker container with enhanced error handling"""
     
     container_name = f"robot-real-sim-{execution_id}"
