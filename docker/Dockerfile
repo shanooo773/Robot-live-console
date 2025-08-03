@@ -50,6 +50,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     x11-utils \
     mesa-utils \
+    xauth \
     && rm -rf /var/lib/apt/lists/*
 
 # Initialize rosdep
@@ -71,7 +72,8 @@ COPY scripts/record_simulation.sh /opt/simulation/record_simulation.sh
 COPY scripts/run_simulation.py /opt/simulation/run_simulation.py
 
 # Make scripts executable
-RUN chmod +x /opt/simulation/record_simulation.sh
+RUN chmod +x /opt/simulation/record_simulation.sh && \
+    chmod +x /opt/simulation/run_simulation.py
 
 # Source ROS setup in bashrc for interactive sessions
 RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc \
@@ -79,9 +81,13 @@ RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc \
 
 # Create entrypoint script that sources ROS
 RUN echo '#!/bin/bash\n\
+set -e\n\
 source /opt/ros/noetic/setup.bash\n\
 export ROS_PACKAGE_PATH=/opt/simulation:$ROS_PACKAGE_PATH\n\
 export PYTHONPATH=/opt/simulation:$PYTHONPATH\n\
+# Create necessary directories with proper permissions\n\
+mkdir -p /tmp /output /workspace\n\
+chmod 777 /tmp /output /workspace\n\
 exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

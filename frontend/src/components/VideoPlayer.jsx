@@ -63,7 +63,7 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
             if (response.ok) {
               console.log('Video URL is accessible, checking content type:', response.headers.get('content-type'));
               // For mock simulation, show success message instead of trying to play invalid video
-              if (response.headers.get('content-length') === '1032') {
+              if (response.headers.get('content-length') === '1032' || response.headers.get('content-length') === '2048') {
                 // This is our mock video - show success message
                 setIsError(false);
                 console.log('Mock simulation video detected - showing success message');
@@ -90,11 +90,51 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
           });
       } else {
         setIsError(true);
-        setError(result.error || "Failed to run simulation");
+        // Enhanced error message parsing
+        let errorMessage = result.error || "Failed to run simulation";
+        
+        // Parse detailed error information if available
+        if (errorMessage.includes('SIMULATION_ERROR_CODE:')) {
+          const lines = errorMessage.split('\n');
+          const userFriendlyErrors = [];
+          
+          lines.forEach(line => {
+            if (line.includes('URDF file not found')) {
+              userFriendlyErrors.push('❌ Robot description file (URDF) not found');
+            } else if (line.includes('World file not found')) {
+              userFriendlyErrors.push('❌ World file not found');
+            } else if (line.includes('Gazebo startup failure')) {
+              userFriendlyErrors.push('❌ Robot simulator failed to start');
+            } else if (line.includes('Virtual display failure')) {
+              userFriendlyErrors.push('❌ Video recording setup failed');
+            } else if (line.includes('ROS master failure')) {
+              userFriendlyErrors.push('❌ Robot control system failed to start');
+            } else if (line.includes('Insufficient memory')) {
+              userFriendlyErrors.push('❌ Not enough memory to run simulation');
+            } else if (line.includes('Docker image not found')) {
+              userFriendlyErrors.push('❌ Simulation environment not available');
+            }
+          });
+          
+          if (userFriendlyErrors.length > 0) {
+            errorMessage = userFriendlyErrors.join('\n');
+          }
+        }
+        
+        setError(errorMessage);
       }
     } catch (err) {
       setIsError(true);
-      setError(err.message || "Connection error. Make sure the backend is running.");
+      let errorMessage = err.message || "Connection error. Make sure the backend is running.";
+      
+      // Parse network errors
+      if (errorMessage.includes('NetworkError') || errorMessage.includes('fetch')) {
+        errorMessage = "❌ Cannot connect to simulation server. Please check if the backend is running.";
+      } else if (errorMessage.includes('timeout')) {
+        errorMessage = "❌ Simulation timed out. The robot simulation may be taking too long.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -171,7 +211,7 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
         <Alert status="error" bg="#2d1b1b" border="1px solid #e53e3e" mb={4}>
           <AlertIcon />
           <Box>
-            <Text color="red.400">{error}</Text>
+            <Text color="red.400" whiteSpace="pre-line">{error}</Text>
             {executionId && (
               <Code colorScheme="red" fontSize="sm" mt={2}>
                 Execution ID: {executionId}
@@ -182,6 +222,12 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
                 Attempted URL: {videoUrl}
               </Text>
             )}
+            <Text color="gray.400" fontSize="sm" mt={2}>
+              💡 Troubleshooting tips:
+              <br />• Check if Docker is running: docker --version
+              <br />• Build simulation image: ./setup.sh build
+              <br />• Check backend logs for detailed error information
+            </Text>
           </Box>
         </Alert>
       )}
