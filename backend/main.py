@@ -402,7 +402,18 @@ class CodeExecutionRequest(BaseModel):
     code: str
     robot_type: str
 
+class SimulationRequest(BaseModel):
+    urdf_path: str
+    world_path: str
+    duration: Optional[int] = 10
+
 class CodeExecutionResponse(BaseModel):
+    success: bool
+    video_url: Optional[str] = None
+    error: Optional[str] = None
+    execution_id: str
+
+class SimulationResponse(BaseModel):
     success: bool
     video_url: Optional[str] = None
     error: Optional[str] = None
@@ -443,6 +454,154 @@ async def health_check():
 @app.get("/")
 async def root():
     return {"message": "Robot Simulation API is running", "version": "1.0.0"}
+
+@app.post("/simulate", response_model=SimulationResponse)
+async def run_simulation(request: SimulationRequest):
+    """Run a simulation with provided URDF and world files"""
+    
+    execution_id = str(uuid.uuid4())
+    logger.info(f"Starting simulation {execution_id} with URDF: {request.urdf_path}, World: {request.world_path}")
+    
+    try:
+        # Validate file paths
+        urdf_path = Path(request.urdf_path)
+        world_path = Path(request.world_path)
+        
+        if not urdf_path.exists():
+            raise HTTPException(
+                status_code=400,
+                detail=f"URDF file not found: {request.urdf_path}"
+            )
+        
+        if not world_path.exists():
+            raise HTTPException(
+                status_code=400,
+                detail=f"World file not found: {request.world_path}"
+            )
+        
+        # Determine robot type from URDF filename (basic heuristic)
+        robot_type = "arm"  # default
+        if "hand" in urdf_path.name.lower():
+            robot_type = "hand"
+        elif "turtle" in urdf_path.name.lower():
+            robot_type = "turtlebot"
+        elif "arm" in urdf_path.name.lower():
+            robot_type = "arm"
+        
+        # Create execution directory
+        exec_dir = Path(f"temp/{execution_id}")
+        exec_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create a basic Python script for simulation (user can customize this)
+        code_content = f"""#!/usr/bin/env python3
+# Auto-generated simulation script for {robot_type}
+import rospy
+import time
+
+def run_simulation():
+    rospy.init_node('simulation_runner', anonymous=True)
+    print("Simulation started for {robot_type}")
+    
+    # Basic simulation logic - can be customized
+    time.sleep({request.duration - 2})  # Run for most of the duration
+    
+    print("Simulation completed")
+
+if __name__ == '__main__':
+    try:
+        run_simulation()
+    except rospy.ROSInterruptException:
+        pass
+"""
+        
+        code_file = exec_dir / "user_code.py"
+        async with aiofiles.open(code_file, 'w') as f:
+            await f.write(code_content)
+        
+        # Run simulation in Docker container
+        video_path = await run_real_simulation_in_docker(
+            execution_id=execution_id,
+            urdf_path=str(urdf_path),
+            world_path=str(world_path),
+            code_file=str(code_file),
+            duration=request.duration
+        )
+        
+        # Check if video exists in backend/videos
+        final_video_path = VIDEOS_DIR / f"{execution_id}.mp4"
+        if final_video_path.exists() and final_video_path.stat().st_size > 0:
+            video_url = f"/videos/{execution_id}.mp4"
+            logger.info(f"Simulation {execution_id} completed successfully. Video size: {final_video_path.stat().st_size} bytes")
+            return SimulationResponse(
+                success=True,
+                video_url=video_url,
+                execution_id=execution_id
+            )
+        else:
+            raise Exception(f"Video generation failed - no video file found at {final_video_path}")
+            
+    except Exception as e:
+        logger.error(f"Simulation {execution_id} failed: {str(e)}")
+        return SimulationResponse(
+            success=False,
+            error=str(e),
+            execution_id=execution_id
+        )
+
+@app.post("/upload-files")
+async def upload_simulation_files(
+    urdf_file: UploadFile = File(...),
+    world_file: UploadFile = File(...)
+):
+    """Upload URDF and world files for simulation"""
+    
+    upload_id = str(uuid.uuid4())
+    upload_dir = Path(f"temp/uploads/{upload_id}")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        # Validate file extensions
+        if not urdf_file.filename.endswith(('.urdf', '.xacro')):
+            raise HTTPException(
+                status_code=400,
+                detail="URDF file must have .urdf or .xacro extension"
+            )
+        
+        if not world_file.filename.endswith('.world'):
+            raise HTTPException(
+                status_code=400,
+                detail="World file must have .world extension"
+            )
+        
+        # Save URDF file
+        urdf_path = upload_dir / urdf_file.filename
+        async with aiofiles.open(urdf_path, 'wb') as f:
+            content = await urdf_file.read()
+            await f.write(content)
+        
+        # Save world file
+        world_path = upload_dir / world_file.filename
+        async with aiofiles.open(world_path, 'wb') as f:
+            content = await world_file.read()
+            await f.write(content)
+        
+        logger.info(f"Files uploaded for {upload_id}: URDF={urdf_path}, World={world_path}")
+        
+        return {
+            "success": True,
+            "upload_id": upload_id,
+            "urdf_path": str(urdf_path),
+            "world_path": str(world_path),
+            "urdf_filename": urdf_file.filename,
+            "world_filename": world_file.filename
+        }
+        
+    except Exception as e:
+        logger.error(f"File upload failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"File upload failed: {str(e)}"
+        )
 
 @app.get("/robots")
 async def get_available_robots():
@@ -508,7 +667,125 @@ app.mount("/videos", StaticFiles(directory="videos"), name="videos")
 VIDEOS_DIR = Path(__file__).parent / "videos"
 VIDEOS_DIR.mkdir(exist_ok=True)
 
-async def run_simulation_in_docker(execution_id: str, robot_type: str, code_file: str) -> str:
+async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world_path: str, code_file: str, duration: int = 10) -> str:
+    """Run the real ROS/Gazebo simulation inside a Docker container"""
+    
+    container_name = f"robot-real-sim-{execution_id}"
+    
+    # Create videos directory if it doesn't exist
+    VIDEOS_DIR.mkdir(exist_ok=True)
+    
+    # Define paths
+    host_videos_dir = VIDEOS_DIR.absolute()
+    container_videos_dir = "/output"
+    video_output_path = f"{container_videos_dir}/video.mp4"
+    host_video_path = host_videos_dir / f"{execution_id}.mp4"
+    
+    # Create simulation data directory and copy files
+    simulation_data_dir = Path(f"temp/{execution_id}/simulation_data")
+    simulation_data_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Copy URDF and world files to simulation data directory
+    urdf_basename = Path(urdf_path).name
+    world_basename = Path(world_path).name
+    
+    import shutil
+    container_urdf_path = simulation_data_dir / urdf_basename
+    container_world_path = simulation_data_dir / world_basename
+    
+    shutil.copy2(urdf_path, container_urdf_path)
+    shutil.copy2(world_path, container_world_path)
+    
+    logger.info(f"Starting Docker container {container_name}")
+    logger.info(f"Host videos directory: {host_videos_dir}")
+    logger.info(f"Container videos directory: {container_videos_dir}")
+    logger.info(f"URDF: {urdf_path} -> /simulation_data/{urdf_basename}")
+    logger.info(f"World: {world_path} -> /simulation_data/{world_basename}")
+    
+    # Check if Docker client is available and if robot simulation image exists
+    use_mock = False
+    try:
+        if docker_client and hasattr(docker_client, 'client') and docker_client.client:
+            docker_client.client.images.get("robot-simulation:latest")
+            logger.info("Using Docker simulation")
+        elif docker_client and docker_client.use_cli:
+            # Use CLI to check for image
+            result = subprocess.run(['docker', 'images', '-q', 'robot-simulation:latest'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode != 0 or not result.stdout.strip():
+                raise Exception("Docker image not found")
+            logger.info("Using Docker CLI simulation")
+        else:
+            raise Exception("Docker not available")
+    except Exception as e:
+        logger.warning(f"Docker simulation not available ({e}), using mock simulation for testing")
+        use_mock = True
+    
+    if use_mock:
+        # Fallback to mock simulation
+        return await run_simulation_in_docker(execution_id, "arm", code_file)
+    
+    # Docker simulation setup
+    volumes = {
+        str(Path(code_file).parent.absolute()): {'bind': '/workspace', 'mode': 'ro'},
+        str(simulation_data_dir.absolute()): {'bind': '/simulation_data', 'mode': 'ro'},
+        str(host_videos_dir): {'bind': container_videos_dir, 'mode': 'rw'}
+    }
+    
+    environment = {
+        'EXECUTION_ID': execution_id,
+        'DISPLAY': ':99'  # Virtual display
+    }
+    
+    try:
+        # Run container
+        container = docker_client.containers().run(
+            image="robot-simulation:latest",
+            name=container_name,
+            volumes=volumes,
+            environment=environment,
+            working_dir="/workspace",
+            command=[
+                "bash", "/opt/simulation/record_simulation.sh",
+                "--urdf-file", f"/simulation_data/{urdf_basename}",
+                "--world-file", f"/simulation_data/{world_basename}",
+                "--output-video", video_output_path,
+                "--duration", str(duration)
+            ],
+            detach=True,
+            mem_limit="4g",  # Increased memory for Gazebo
+            cpu_quota=200000,  # Allow 2 CPUs for Gazebo
+            network_mode="none",  # Disable networking for security
+            remove=True
+        )
+        
+        logger.info(f"Container {container_name} started, waiting for completion...")
+        
+        # Wait for container to complete (max duration + 60 seconds for setup/cleanup)
+        result = container.wait(timeout=duration + 60)
+        logs = container.logs().decode('utf-8')
+        
+        logger.info(f"Container {container_name} completed with status {result['StatusCode']}")
+        logger.info(f"Container logs: {logs}")
+        
+        if result['StatusCode'] == 0:
+            # Check if video was created on the host side
+            if host_video_path.exists():
+                logger.info(f"Video successfully created at {host_video_path} (size: {host_video_path.stat().st_size} bytes)")
+                return str(host_video_path)
+            else:
+                logger.error(f"Container completed successfully but video not found at {host_video_path}")
+                logger.error(f"Container logs: {logs}")
+                raise Exception(f"Video file not generated at expected location: {host_video_path}")
+        else:
+            logger.error(f"Container {container_name} failed with status {result['StatusCode']}")
+            logger.error(f"Container logs: {logs}")
+            raise Exception(f"Simulation failed with exit code {result['StatusCode']}: {logs}")
+            
+    except Exception as e:
+        logger.error(f"Docker execution error: {e}")
+        raise Exception(f"Docker execution failed: {e}")
+
     """Run the simulation inside a Docker container"""
     
     container_name = f"robot-sim-{execution_id}"
