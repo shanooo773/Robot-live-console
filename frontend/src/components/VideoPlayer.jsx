@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Box, Button, Text, Spinner, Alert, AlertIcon } from "@chakra-ui/react";
+import { useState, useEffect } from "react";
+import { Box, Button, Text, Spinner, Alert, AlertIcon, Code } from "@chakra-ui/react";
 import { executeRobotCode } from "../api";
 
 const VideoPlayer = ({ editorRef, robot }) => {
@@ -7,6 +7,13 @@ const VideoPlayer = ({ editorRef, robot }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState("");
+  const [executionId, setExecutionId] = useState("");
+  const [videoLoadError, setVideoLoadError] = useState(false);
+
+  // Reset video load error when videoUrl changes
+  useEffect(() => {
+    setVideoLoadError(false);
+  }, [videoUrl]);
 
   const runCode = async () => {
     const sourceCode = editorRef.current.getValue();
@@ -23,11 +30,29 @@ const VideoPlayer = ({ editorRef, robot }) => {
       setIsError(false);
       setVideoUrl("");
       setError("");
+      setExecutionId("");
+      setVideoLoadError(false);
 
       const result = await executeRobotCode(sourceCode, robot);
       
       if (result.success && result.video_url) {
-        setVideoUrl(`http://localhost:8000${result.video_url}`);
+        const fullVideoUrl = `http://localhost:8000${result.video_url}`;
+        setVideoUrl(fullVideoUrl);
+        setExecutionId(result.execution_id);
+        
+        // Give the video a moment to be available, then check if it loads
+        setTimeout(() => {
+          // Try to preload the video to check if it's accessible
+          const testVideo = document.createElement('video');
+          testVideo.onloadeddata = () => {
+            console.log('Video loaded successfully');
+          };
+          testVideo.onerror = () => {
+            setVideoLoadError(true);
+            setError(`Video file not accessible at ${fullVideoUrl}. The simulation may have failed to generate a video.`);
+          };
+          testVideo.src = fullVideoUrl;
+        }, 1000);
       } else {
         setIsError(true);
         setError(result.error || "Failed to run simulation");
@@ -37,6 +62,24 @@ const VideoPlayer = ({ editorRef, robot }) => {
       setError(err.message || "Connection error. Make sure the backend is running.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleVideoError = () => {
+    setVideoLoadError(true);
+    setIsError(true);
+    setError(`Failed to load video. The file may not exist or be corrupted. Execution ID: ${executionId}`);
+  };
+
+  const checkVideoStatus = async () => {
+    if (executionId) {
+      try {
+        const response = await fetch(`http://localhost:8000/videos-check/${executionId}`);
+        const data = await response.json();
+        console.log('Video status:', data);
+      } catch (err) {
+        console.error('Failed to check video status:', err);
+      }
     }
   };
 
@@ -56,6 +99,19 @@ const VideoPlayer = ({ editorRef, robot }) => {
       >
         Run Code
       </Button>
+
+      {executionId && (
+        <Button
+          variant="outline"
+          colorScheme="blue"
+          size="sm"
+          mb={4}
+          ml={2}
+          onClick={checkVideoStatus}
+        >
+          Debug Video Status
+        </Button>
+      )}
 
       {isLoading && (
         <Box
@@ -77,13 +133,25 @@ const VideoPlayer = ({ editorRef, robot }) => {
       )}
 
       {isError && (
-        <Alert status="error" bg="#2d1b1b" border="1px solid #e53e3e">
+        <Alert status="error" bg="#2d1b1b" border="1px solid #e53e3e" mb={4}>
           <AlertIcon />
-          <Text color="red.400">{error}</Text>
+          <Box>
+            <Text color="red.400">{error}</Text>
+            {executionId && (
+              <Code colorScheme="red" fontSize="sm" mt={2}>
+                Execution ID: {executionId}
+              </Code>
+            )}
+            {videoUrl && (
+              <Text color="red.300" fontSize="sm" mt={1}>
+                Attempted URL: {videoUrl}
+              </Text>
+            )}
+          </Box>
         </Alert>
       )}
 
-      {videoUrl && !isLoading && (
+      {videoUrl && !isLoading && !videoLoadError && (
         <Box
           height="75vh"
           border="1px solid #333"
@@ -97,6 +165,9 @@ const VideoPlayer = ({ editorRef, robot }) => {
             controls
             autoPlay
             style={{ objectFit: "contain" }}
+            onError={handleVideoError}
+            onLoadStart={() => console.log('Video load started')}
+            onCanPlay={() => console.log('Video can play')}
           >
             <source src={videoUrl} type="video/mp4" />
             Your browser does not support the video tag.
