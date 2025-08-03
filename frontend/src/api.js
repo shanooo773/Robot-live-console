@@ -59,3 +59,8 @@ export const runSimulation = async (urdfPath, worldPath, duration = 10) => {
   });
   return response.data;
 };
+
+export const getExecutionLogs = async (executionId) => {
+  const response = await API.get(`/execution-logs/${executionId}`);
+  return response.data;
+};
