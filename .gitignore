@@ -35,6 +35,7 @@ __pycache__/
 venv/
 env/
 ENV/
+backend_test_env/
 
 # Video files and temporary data
 backend/videos/*.mp4

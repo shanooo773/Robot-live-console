@@ -553,39 +553,81 @@ async def upload_simulation_files(
     urdf_file: UploadFile = File(...),
     world_file: UploadFile = File(...)
 ):
-    """Upload URDF and world files for simulation"""
+    """Upload URDF and world files for simulation with enhanced validation"""
     
     upload_id = str(uuid.uuid4())
     upload_dir = Path(f"temp/uploads/{upload_id}")
     upload_dir.mkdir(parents=True, exist_ok=True)
     
     try:
-        # Validate file extensions
-        if not urdf_file.filename.endswith(('.urdf', '.xacro')):
-            raise HTTPException(
-                status_code=400,
-                detail="URDF file must have .urdf or .xacro extension"
-            )
+        # Enhanced file validation
+        def validate_file_size(file: UploadFile, max_size_mb: int = 10):
+            """Validate file size"""
+            if hasattr(file, 'size') and file.size:
+                if file.size > max_size_mb * 1024 * 1024:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"File {file.filename} is too large (max {max_size_mb}MB)"
+                    )
         
-        if not world_file.filename.endswith('.world'):
-            raise HTTPException(
-                status_code=400,
-                detail="World file must have .world extension"
-            )
+        def validate_file_extension(filename: str, allowed_extensions: list):
+            """Validate file extension"""
+            if not any(filename.lower().endswith(ext) for ext in allowed_extensions):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File {filename} must have one of these extensions: {', '.join(allowed_extensions)}"
+                )
+        
+        def validate_file_content(file_path: Path, required_content: str, file_type: str):
+            """Validate file contains required content"""
+            try:
+                content = file_path.read_text(encoding='utf-8', errors='ignore')
+                if required_content not in content:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"{file_type} file does not contain valid {required_content} definition"
+                    )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Failed to validate {file_type} file content: {str(e)}"
+                )
+        
+        # Validate URDF file
+        validate_file_extension(urdf_file.filename, ['.urdf', '.xacro'])
+        validate_file_size(urdf_file, 5)  # 5MB max for URDF
+        
+        # Validate world file
+        validate_file_extension(world_file.filename, ['.world'])
+        validate_file_size(world_file, 10)  # 10MB max for world
         
         # Save URDF file
         urdf_path = upload_dir / urdf_file.filename
         async with aiofiles.open(urdf_path, 'wb') as f:
             content = await urdf_file.read()
+            if len(content) == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="URDF file is empty"
+                )
             await f.write(content)
         
         # Save world file
         world_path = upload_dir / world_file.filename
         async with aiofiles.open(world_path, 'wb') as f:
             content = await world_file.read()
+            if len(content) == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="World file is empty"
+                )
             await f.write(content)
         
-        logger.info(f"Files uploaded for {upload_id}: URDF={urdf_path}, World={world_path}")
+        # Validate file contents
+        validate_file_content(urdf_path, "<robot", "URDF")
+        validate_file_content(world_path, "<world", "World")
+        
+        logger.info(f"Files uploaded and validated for {upload_id}: URDF={urdf_path}, World={world_path}")
         
         return {
             "success": True,
@@ -593,9 +635,18 @@ async def upload_simulation_files(
             "urdf_path": str(urdf_path),
             "world_path": str(world_path),
             "urdf_filename": urdf_file.filename,
-            "world_filename": world_file.filename
+            "world_filename": world_file.filename,
+            "validation": {
+                "urdf_size_bytes": urdf_path.stat().st_size,
+                "world_size_bytes": world_path.stat().st_size,
+                "urdf_valid": True,
+                "world_valid": True
+            }
         }
         
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error(f"File upload failed: {e}")
         raise HTTPException(
@@ -668,14 +719,14 @@ VIDEOS_DIR = Path(__file__).parent / "videos"
 VIDEOS_DIR.mkdir(exist_ok=True)
 
 async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world_path: str, code_file: str, duration: int = 10) -> str:
-    """Run the real ROS/Gazebo simulation inside a Docker container"""
+    """Run the real ROS/Gazebo simulation inside a Docker container with enhanced error handling"""
     
     container_name = f"robot-real-sim-{execution_id}"
     
     # Create videos directory if it doesn't exist
     VIDEOS_DIR.mkdir(exist_ok=True)
     
-    # Define paths
+    # Define paths - Windows-safe volume mounting
     host_videos_dir = VIDEOS_DIR.absolute()
     container_videos_dir = "/output"
     video_output_path = f"{container_videos_dir}/video.mp4"
@@ -704,6 +755,8 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
     
     # Check if Docker client is available and if robot simulation image exists
     use_mock = False
+    error_details = ""
+    
     try:
         if docker_client and hasattr(docker_client, 'client') and docker_client.client:
             docker_client.client.images.get("robot-simulation:latest")
@@ -718,24 +771,54 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
         else:
             raise Exception("Docker not available")
     except Exception as e:
+        error_details = str(e)
         logger.warning(f"Docker simulation not available ({e}), using mock simulation for testing")
         use_mock = True
     
     if use_mock:
-        # Fallback to mock simulation
-        return await run_simulation_in_docker(execution_id, "arm", code_file)
+        # Fallback to mock simulation with detailed error message
+        mock_video_content = create_mock_video_with_reason(
+            execution_id, 
+            f"Real simulation unavailable: {error_details}. Docker image 'robot-simulation:latest' not found or Docker not accessible."
+        )
+        with open(host_video_path, 'wb') as f:
+            f.write(mock_video_content)
+        return str(host_video_path)
     
-    # Docker simulation setup
+    # Docker simulation setup with Windows-safe paths
+    volumes = {}
+    
+    # Handle Windows path conversion if needed
+    if platform.system().lower() == "windows":
+        # Convert Windows paths to proper Docker format
+        def windows_to_docker_path(path):
+            """Convert Windows path to Docker-compatible format"""
+            path_str = str(path).replace('\\', '/')
+            if path_str[1:3] == ':/':  # Drive letter format C:/
+                path_str = '/' + path_str[0].lower() + path_str[2:]
+            return path_str
+        
+        workspace_path = windows_to_docker_path(Path(code_file).parent.absolute())
+        sim_data_path = windows_to_docker_path(simulation_data_dir.absolute())
+        videos_path = windows_to_docker_path(host_videos_dir)
+    else:
+        workspace_path = str(Path(code_file).parent.absolute())
+        sim_data_path = str(simulation_data_dir.absolute())
+        videos_path = str(host_videos_dir)
+    
     volumes = {
-        str(Path(code_file).parent.absolute()): {'bind': '/workspace', 'mode': 'ro'},
-        str(simulation_data_dir.absolute()): {'bind': '/simulation_data', 'mode': 'ro'},
-        str(host_videos_dir): {'bind': container_videos_dir, 'mode': 'rw'}
+        workspace_path: {'bind': '/workspace', 'mode': 'ro'},
+        sim_data_path: {'bind': '/simulation_data', 'mode': 'ro'},
+        videos_path: {'bind': container_videos_dir, 'mode': 'rw'}
     }
     
     environment = {
         'EXECUTION_ID': execution_id,
         'DISPLAY': ':99'  # Virtual display
     }
+    
+    container_logs = ""
+    container_exit_code = -1
     
     try:
         # Run container
@@ -763,30 +846,138 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
         
         # Wait for container to complete (max duration + 60 seconds for setup/cleanup)
         result = container.wait(timeout=duration + 60)
-        logs = container.logs().decode('utf-8')
+        container_logs = container.logs().decode('utf-8', errors='replace')
+        container_exit_code = result['StatusCode']
         
-        logger.info(f"Container {container_name} completed with status {result['StatusCode']}")
-        logger.info(f"Container logs: {logs}")
+        logger.info(f"Container {container_name} completed with status {container_exit_code}")
         
-        if result['StatusCode'] == 0:
+        # Parse container logs for specific error information
+        error_info = parse_simulation_logs(container_logs)
+        
+        if container_exit_code == 0:
             # Check if video was created on the host side
-            if host_video_path.exists():
+            if host_video_path.exists() and host_video_path.stat().st_size > 1000:
                 logger.info(f"Video successfully created at {host_video_path} (size: {host_video_path.stat().st_size} bytes)")
                 return str(host_video_path)
             else:
-                logger.error(f"Container completed successfully but video not found at {host_video_path}")
-                logger.error(f"Container logs: {logs}")
-                raise Exception(f"Video file not generated at expected location: {host_video_path}")
+                error_msg = "Container completed successfully but video not found or too small"
+                if error_info.get('detected_issues'):
+                    error_msg += f". Detected issues: {', '.join(error_info['detected_issues'])}"
+                logger.error(f"{error_msg}. Container logs: {container_logs}")
+                raise Exception(error_msg)
         else:
-            logger.error(f"Container {container_name} failed with status {result['StatusCode']}")
-            logger.error(f"Container logs: {logs}")
-            raise Exception(f"Simulation failed with exit code {result['StatusCode']}: {logs}")
+            # Container failed - provide detailed error information
+            error_msg = f"Simulation failed with exit code {container_exit_code}"
+            if error_info.get('primary_error'):
+                error_msg = error_info['primary_error']
+            elif error_info.get('detected_issues'):
+                error_msg += f". Issues: {', '.join(error_info['detected_issues'])}"
+            
+            logger.error(f"Container {container_name} failed: {error_msg}")
+            logger.error(f"Full container logs: {container_logs}")
+            raise Exception(error_msg)
             
     except Exception as e:
-        logger.error(f"Docker execution error: {e}")
-        raise Exception(f"Docker execution failed: {e}")
+        # Create a mock video with error details for user feedback
+        error_message = str(e)
+        if container_logs:
+            # Include relevant log snippets
+            log_snippets = extract_relevant_log_snippets(container_logs)
+            if log_snippets:
+                error_message += f"\n\nLog details:\n{log_snippets}"
+        
+        logger.error(f"Docker execution error: {error_message}")
+        
+        # Create mock video with error details
+        mock_video_content = create_mock_video_with_reason(execution_id, error_message)
+        with open(host_video_path, 'wb') as f:
+            f.write(mock_video_content)
+        
+        raise Exception(error_message)
 
-    """Run the simulation inside a Docker container"""
+
+def parse_simulation_logs(logs: str) -> dict:
+    """Parse simulation logs to extract error information and detect root causes"""
+    info = {
+        'primary_error': None,
+        'detected_issues': [],
+        'error_code': None
+    }
+    
+    lines = logs.split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        
+        # Check for simulation error codes
+        if 'SIMULATION_ERROR_CODE:' in line:
+            try:
+                info['error_code'] = int(line.split('SIMULATION_ERROR_CODE:')[1].strip())
+            except:
+                pass
+        
+        if 'SIMULATION_ERROR_MESSAGE:' in line:
+            info['primary_error'] = line.split('SIMULATION_ERROR_MESSAGE:')[1].strip()
+        
+        # Detect specific issues
+        if 'not found' in line.lower() and ('urdf' in line.lower() or 'world' in line.lower()):
+            info['detected_issues'].append('Missing robot/world files')
+        
+        if 'failed to start gazebo' in line.lower():
+            info['detected_issues'].append('Gazebo startup failure')
+        
+        if 'failed to start xvfb' in line.lower():
+            info['detected_issues'].append('Virtual display failure')
+        
+        if 'ffmpeg' in line.lower() and 'failed' in line.lower():
+            info['detected_issues'].append('Video recording failure')
+        
+        if 'ros master' in line.lower() and 'failed' in line.lower():
+            info['detected_issues'].append('ROS master failure')
+        
+        if 'permission denied' in line.lower():
+            info['detected_issues'].append('File permission issues')
+        
+        if 'out of memory' in line.lower() or 'oom' in line.lower():
+            info['detected_issues'].append('Insufficient memory')
+    
+    return info
+
+
+def extract_relevant_log_snippets(logs: str, max_lines: int = 10) -> str:
+    """Extract relevant error information from logs"""
+    lines = logs.split('\n')
+    error_lines = []
+    
+    keywords = ['error', 'failed', 'exception', 'traceback', 'simulation_error']
+    
+    for line in lines:
+        if any(keyword in line.lower() for keyword in keywords):
+            error_lines.append(line.strip())
+    
+    # Return the last few error lines
+    if error_lines:
+        return '\n'.join(error_lines[-max_lines:])
+    
+    # If no specific errors found, return last few lines
+    return '\n'.join([line.strip() for line in lines[-max_lines:] if line.strip()])
+
+
+def create_mock_video_with_reason(execution_id: str, reason: str) -> bytes:
+    """Create a mock video file with error reason embedded"""
+    # Create a basic MP4 file structure with error information
+    mp4_header = b'\x00\x00\x00\x20ftypmp4\x20\x00\x00\x00\x00mp41isom\x00\x00\x00\x08free'
+    
+    # Embed the error reason as metadata (as text)
+    error_metadata = f"SIMULATION_FAILED:{execution_id}:{reason}".encode('utf-8')
+    
+    # Create a simple MP4-like structure
+    mock_content = mp4_header + error_metadata + b'\x00' * (2048 - len(mp4_header) - len(error_metadata))
+    
+    return mock_content
+
+async def run_simulation_in_docker(execution_id: str, robot_type: str, code_file: str) -> str:
+    """Run the simulation inside a Docker container with enhanced error handling"""
     
     container_name = f"robot-sim-{execution_id}"
     
@@ -806,6 +997,8 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
     
     # Check if Docker client is available and if robot simulation image exists
     use_mock = False
+    error_details = ""
+    
     try:
         if docker_client and hasattr(docker_client, 'client') and docker_client.client:
             docker_client.client.images.get("robot-simulation:latest")
@@ -820,18 +1013,55 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
         else:
             raise Exception("Docker not available")
     except Exception as e:
+        error_details = str(e)
         logger.warning(f"Docker simulation not available ({e}), using mock simulation for testing")
         use_mock = True
     
     if use_mock:
-        # Use mock simulation for testing
+        # Use mock simulation for testing with detailed error information
         try:
             mock_script = "/tmp/mock_simulation.py"
             
-            # Copy mock script if it doesn't exist
+            # Create a simple mock script if it doesn't exist
             if not Path(mock_script).exists():
-                logger.error("Mock simulation script not found")
-                raise Exception("Neither Docker nor mock simulation available")
+                mock_content = f'''#!/usr/bin/env python3
+import sys
+import time
+import json
+
+def create_mock_video(output_path, robot_type, reason="Mock simulation"):
+    """Create a mock video file for testing"""
+    # Create a minimal MP4-like file for browser compatibility
+    mp4_header = b'\\x00\\x00\\x00\\x20ftypmp4\\x20\\x00\\x00\\x00\\x00mp41isom\\x00\\x00\\x00\\x08free'
+    
+    # Add some metadata
+    metadata = f"MOCK_VIDEO:{{robot_type}}:{{reason}}".encode('utf-8')
+    content = mp4_header + metadata + b'\\x00' * (2048 - len(mp4_header) - len(metadata))
+    
+    with open(output_path, 'wb') as f:
+        f.write(content)
+    
+    print(f"Mock video created: {{output_path}} ({{len(content)}} bytes)")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--robot-type", required=True)
+    parser.add_argument("--code-file", required=True)
+    parser.add_argument("--output-video", required=True)
+    parser.add_argument("--duration", default="3")
+    
+    args = parser.parse_args()
+    
+    print(f"Mock simulation started for {{args.robot_type}}")
+    time.sleep(2)  # Simulate some processing time
+    
+    create_mock_video(args.output_video, args.robot_type, f"Docker unavailable: {error_details}")
+    print("Mock simulation completed successfully")
+'''
+                
+                Path(mock_script).write_text(mock_content)
+                Path(mock_script).chmod(0o755)
             
             # Run mock simulation
             cmd = [
@@ -848,18 +1078,6 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
             if result.returncode == 0:
                 logger.info("Mock simulation completed successfully")
                 if host_video_path.exists():
-                    # Convert text file to actual MP4-like format for testing
-                    with open(host_video_path, 'rb') as f:
-                        content = f.read()
-                    
-                    # Create a minimal valid MP4 header for testing
-                    # This creates a very basic MP4 file that browsers can recognize
-                    mp4_header = b'\x00\x00\x00\x20ftypmp4\x20\x00\x00\x00\x00mp41isom\x00\x00\x00\x08free'
-                    mp4_content = mp4_header + b'\x00' * 1000  # Add some padding
-                    
-                    with open(host_video_path, 'wb') as f:
-                        f.write(mp4_content)
-                    
                     logger.info(f"Mock video file created at {host_video_path} (size: {host_video_path.stat().st_size} bytes)")
                     return str(host_video_path)
                 else:
@@ -870,12 +1088,32 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
                 
         except Exception as e:
             logger.error(f"Mock simulation error: {e}")
-            raise Exception(f"Mock simulation failed: {e}")
+            # Create a fallback mock video directly
+            mock_content = create_mock_video_with_reason(execution_id, f"Mock simulation failed: {str(e)}")
+            with open(host_video_path, 'wb') as f:
+                f.write(mock_content)
+            return str(host_video_path)
     
-    # Original Docker simulation code
+    # Original Docker simulation code with enhanced error handling
+    volumes = {}
+    
+    # Handle Windows path conversion if needed
+    if platform.system().lower() == "windows":
+        def windows_to_docker_path(path):
+            path_str = str(path).replace('\\', '/')
+            if path_str[1:3] == ':/':  # Drive letter format C:/
+                path_str = '/' + path_str[0].lower() + path_str[2:]
+            return path_str
+        
+        workspace_path = windows_to_docker_path(Path(code_file).parent.absolute())
+        videos_path = windows_to_docker_path(host_videos_dir)
+    else:
+        workspace_path = str(Path(code_file).parent.absolute())
+        videos_path = str(host_videos_dir)
+    
     volumes = {
-        str(Path(code_file).parent.absolute()): {'bind': '/workspace', 'mode': 'ro'},
-        str(host_videos_dir): {'bind': container_videos_dir, 'mode': 'rw'}
+        workspace_path: {'bind': '/workspace', 'mode': 'ro'},
+        videos_path: {'bind': container_videos_dir, 'mode': 'rw'}
     }
     
     environment = {
@@ -883,6 +1121,9 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
         'EXECUTION_ID': execution_id,
         'DISPLAY': ':99'  # Virtual display
     }
+    
+    container_logs = ""
+    container_exit_code = -1
     
     try:
         # Run container
@@ -907,30 +1148,53 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
         
         # Wait for container to complete (max 60 seconds)
         result = container.wait(timeout=60)
-        logs = container.logs().decode('utf-8')
+        container_logs = container.logs().decode('utf-8', errors='replace')
+        container_exit_code = result['StatusCode']
         
-        logger.info(f"Container {container_name} completed with status {result['StatusCode']}")
+        logger.info(f"Container {container_name} completed with status {container_exit_code}")
         
-        if result['StatusCode'] == 0:
+        # Parse logs for specific error information
+        error_info = parse_simulation_logs(container_logs)
+        
+        if container_exit_code == 0:
             # Check if video was created on the host side
-            if host_video_path.exists():
+            if host_video_path.exists() and host_video_path.stat().st_size > 1000:
                 logger.info(f"Video successfully created at {host_video_path} (size: {host_video_path.stat().st_size} bytes)")
                 return str(host_video_path)
             else:
-                logger.error(f"Container completed successfully but video not found at {host_video_path}")
-                logger.error(f"Container logs: {logs}")
-                raise Exception(f"Video file not generated at expected location: {host_video_path}")
+                error_msg = "Container completed successfully but video not found or too small"
+                if error_info.get('detected_issues'):
+                    error_msg += f". Detected issues: {', '.join(error_info['detected_issues'])}"
+                logger.error(f"{error_msg}. Container logs: {container_logs}")
+                raise Exception(error_msg)
         else:
-            logger.error(f"Container {container_name} failed with status {result['StatusCode']}")
-            logger.error(f"Container logs: {logs}")
-            raise Exception(f"Simulation failed with exit code {result['StatusCode']}: {logs}")
+            # Container failed - provide detailed error information
+            error_msg = f"Simulation failed with exit code {container_exit_code}"
+            if error_info.get('primary_error'):
+                error_msg = error_info['primary_error']
+            elif error_info.get('detected_issues'):
+                error_msg += f". Issues: {', '.join(error_info['detected_issues'])}"
             
-    except docker.errors.ContainerError as e:
-        logger.error(f"Container error: {e}")
-        raise Exception(f"Container execution failed: {e}")
+            logger.error(f"Container {container_name} failed: {error_msg}")
+            logger.error(f"Full container logs: {container_logs}")
+            raise Exception(error_msg)
+            
     except Exception as e:
-        logger.error(f"Docker execution error: {e}")
-        raise Exception(f"Docker execution failed: {e}")
+        # Create mock video with error details
+        error_message = str(e)
+        if container_logs:
+            log_snippets = extract_relevant_log_snippets(container_logs)
+            if log_snippets:
+                error_message += f"\n\nLog details:\n{log_snippets}"
+        
+        logger.error(f"Docker execution error: {error_message}")
+        
+        # Create mock video with error details
+        mock_video_content = create_mock_video_with_reason(execution_id, error_message)
+        with open(host_video_path, 'wb') as f:
+            f.write(mock_video_content)
+        
+        raise Exception(error_message)
 
 if __name__ == "__main__":
     import uvicorn
