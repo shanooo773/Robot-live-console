@@ -448,7 +448,7 @@ async def root():
 async def get_available_robots():
     """Get list of available robot types"""
     return {"robots": list(ROBOT_CONFIGS.keys())}
-
+# ...existing code...
 @app.post("/run-code", response_model=CodeExecutionResponse)
 async def run_code(request: CodeExecutionRequest):
     """Execute Python code in a robot simulation environment"""
@@ -483,40 +483,18 @@ async def run_code(request: CodeExecutionRequest):
             code_file=str(code_file)
         )
         
-        if video_path and Path(video_path).exists():
-            # Move video to videos directory
-            final_video_path = VIDEOS_DIR / f"{execution_id}.mp4"
-            
-            try:
-                # Check if source video exists and has content
-                source_path = Path(video_path)
-                if source_path.stat().st_size == 0:
-                    raise Exception("Generated video file is empty")
-                
-                # Move the video file
-                source_path.rename(final_video_path)
-                
-                # Verify the moved file exists and is accessible
-                if not final_video_path.exists():
-                    raise Exception("Failed to move video file to final location")
-                
-                if final_video_path.stat().st_size == 0:
-                    raise Exception("Moved video file is empty")
-                
-                video_url = f"/videos/{execution_id}.mp4"
-                logger.info(f"Execution {execution_id} completed successfully. Video size: {final_video_path.stat().st_size} bytes")
-                
-                return CodeExecutionResponse(
-                    success=True,
-                    video_url=video_url,
-                    execution_id=execution_id
-                )
-            
-            except Exception as move_error:
-                logger.error(f"Failed to process video file for execution {execution_id}: {move_error}")
-                raise Exception(f"Video processing failed: {move_error}")
+        # Instead of moving, check if video exists in backend/videos
+        final_video_path = VIDEOS_DIR / f"{execution_id}.mp4"
+        if final_video_path.exists() and final_video_path.stat().st_size > 0:
+            video_url = f"/videos/{execution_id}.mp4"
+            logger.info(f"Execution {execution_id} completed successfully. Video size: {final_video_path.stat().st_size} bytes")
+            return CodeExecutionResponse(
+                success=True,
+                video_url=video_url,
+                execution_id=execution_id
+            )
         else:
-            raise Exception(f"Video generation failed - no video file found at {video_path}")
+            raise Exception(f"Video generation failed - no video file found at {final_video_path}")
             
     except Exception as e:
         logger.error(f"Execution {execution_id} failed: {str(e)}")
@@ -525,6 +503,10 @@ async def run_code(request: CodeExecutionRequest):
             error=str(e),
             execution_id=execution_id
         )
+app.mount("/videos", StaticFiles(directory="videos"), name="videos")
+# ...existing code...
+VIDEOS_DIR = Path(__file__).parent / "videos"
+VIDEOS_DIR.mkdir(exist_ok=True)
 
 async def run_simulation_in_docker(execution_id: str, robot_type: str, code_file: str) -> str:
     """Run the simulation inside a Docker container"""

@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Default values
 BACKEND_PORT=8000
-FRONTEND_PORT=5173  # Vite default port
+FRONTEND_PORT=3000  # Vite default port
 DOCKER_IMAGE_NAME="robot-simulation"
 DOCKER_TAG="latest"
 
