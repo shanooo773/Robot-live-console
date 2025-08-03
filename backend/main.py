@@ -427,9 +427,22 @@ ROBOT_CONFIGS = {
     }
 }
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for system monitoring"""
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "services": {
+            "backend": "running",
+            "docker": "available" if docker_client else "unavailable",
+            "videos_directory": VIDEOS_DIR.exists()
+        }
+    }
+
 @app.get("/")
 async def root():
-    return {"message": "Robot Simulation API is running"}
+    return {"message": "Robot Simulation API is running", "version": "1.0.0"}
 
 @app.get("/robots")
 async def get_available_robots():
