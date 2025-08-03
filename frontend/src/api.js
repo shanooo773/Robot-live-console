@@ -36,3 +36,26 @@ export const getBackendStatus = async () => {
   const response = await API.get("/status");
   return response.data;
 };
+
+// New simulation API endpoints
+export const uploadSimulationFiles = async (urdfFile, worldFile) => {
+  const formData = new FormData();
+  formData.append('urdf_file', urdfFile);
+  formData.append('world_file', worldFile);
+  
+  const response = await API.post("/upload-files", formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const runSimulation = async (urdfPath, worldPath, duration = 10) => {
+  const response = await API.post("/simulate", {
+    urdf_path: urdfPath,
+    world_path: worldPath,
+    duration: duration,
+  });
+  return response.data;
+};
