@@ -7,8 +7,8 @@ import VideoPlayer from "./VideoPlayer";
 
 const CodeEditor = () => {
   const editorRef = useRef();
-  const [value, setValue] = useState("");
   const [robot, setRobot] = useState("turtlebot");
+  const [value, setValue] = useState(ROBOT_CODE_SNIPPETS["turtlebot"]);
 
   const onMount = (editor) => {
     editorRef.current = editor;
@@ -40,7 +40,7 @@ const CodeEditor = () => {
             onChange={(value) => setValue(value)}
           />
         </Box>
-        <VideoPlayer editorRef={editorRef} robot={robot} />
+        <VideoPlayer editorRef={editorRef} robot={robot} codeValue={value} />
       </HStack>
     </Box>
   );
