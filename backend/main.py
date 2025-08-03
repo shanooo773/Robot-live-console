@@ -398,6 +398,37 @@ def check_video_exists(execution_id: str):
             result["error"] = str(e)
     
     return result
+
+@app.get("/execution-logs/{execution_id}")
+def get_execution_logs(execution_id: str):
+    """Get logs for a specific execution (for debugging)"""
+    try:
+        # Check if there's a log file for this execution
+        log_file = Path(f"temp/{execution_id}/simulation.log")
+        if log_file.exists():
+            with open(log_file, 'r') as f:
+                logs = f.read()
+            return {
+                "execution_id": execution_id,
+                "logs": logs,
+                "log_file": str(log_file),
+                "available": True
+            }
+        else:
+            return {
+                "execution_id": execution_id,
+                "logs": "",
+                "log_file": str(log_file),
+                "available": False,
+                "message": "No logs available for this execution"
+            }
+    except Exception as e:
+        return {
+            "execution_id": execution_id,
+            "logs": "",
+            "available": False,
+            "error": str(e)
+        }
 class CodeExecutionRequest(BaseModel):
     code: str
     robot_type: str
@@ -412,12 +443,16 @@ class CodeExecutionResponse(BaseModel):
     video_url: Optional[str] = None
     error: Optional[str] = None
     execution_id: str
+    logs_url: Optional[str] = None
+    error_details: Optional[dict] = None
 
 class SimulationResponse(BaseModel):
     success: bool
     video_url: Optional[str] = None
     error: Optional[str] = None
     execution_id: str
+    logs_url: Optional[str] = None
+    error_details: Optional[dict] = None
 
 # Robot configurations
 ROBOT_CONFIGS = {
@@ -535,7 +570,8 @@ if __name__ == '__main__':
             return SimulationResponse(
                 success=True,
                 video_url=video_url,
-                execution_id=execution_id
+                execution_id=execution_id,
+                logs_url=f"/execution-logs/{execution_id}"
             )
         else:
             raise Exception(f"Video generation failed - no video file found at {final_video_path}")
@@ -545,7 +581,8 @@ if __name__ == '__main__':
         return SimulationResponse(
             success=False,
             error=str(e),
-            execution_id=execution_id
+            execution_id=execution_id,
+            logs_url=f"/execution-logs/{execution_id}"
         )
 
 @app.post("/upload-files")
@@ -701,7 +738,8 @@ async def run_code(request: CodeExecutionRequest):
             return CodeExecutionResponse(
                 success=True,
                 video_url=video_url,
-                execution_id=execution_id
+                execution_id=execution_id,
+                logs_url=f"/execution-logs/{execution_id}"
             )
         else:
             raise Exception(f"Video generation failed - no video file found at {final_video_path}")
@@ -711,7 +749,8 @@ async def run_code(request: CodeExecutionRequest):
         return CodeExecutionResponse(
             success=False,
             error=str(e),
-            execution_id=execution_id
+            execution_id=execution_id,
+            logs_url=f"/execution-logs/{execution_id}"
         )
 app.mount("/videos", StaticFiles(directory="videos"), name="videos")
 # ...existing code...
@@ -830,6 +869,7 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
             working_dir="/workspace",
             command=[
                 "bash", "/opt/simulation/record_simulation.sh",
+                "--robot-type", robot_type,
                 "--urdf-file", f"/simulation_data/{urdf_basename}",
                 "--world-file", f"/simulation_data/{world_basename}",
                 "--output-video", video_output_path,
@@ -850,6 +890,23 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
         container_exit_code = result['StatusCode']
         
         logger.info(f"Container {container_name} completed with status {container_exit_code}")
+        
+        # Save container logs to file for debugging
+        log_file = Path(f"temp/{execution_id}/simulation.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(log_file, 'w') as f:
+                f.write(f"Container: {container_name}\n")
+                f.write(f"Exit Code: {container_exit_code}\n")
+                f.write(f"Robot Type: {robot_type}\n")
+                f.write(f"URDF: {urdf_basename}\n")
+                f.write(f"World: {world_basename}\n")
+                f.write(f"Output Video: {video_output_path}\n")
+                f.write(f"Duration: {duration}\n")
+                f.write(f"=== CONTAINER LOGS ===\n")
+                f.write(container_logs)
+        except Exception as e:
+            logger.warning(f"Failed to save logs to file: {e}")
         
         # Parse container logs for specific error information
         error_info = parse_simulation_logs(container_logs)
@@ -940,6 +997,22 @@ def parse_simulation_logs(logs: str) -> dict:
         
         if 'out of memory' in line.lower() or 'oom' in line.lower():
             info['detected_issues'].append('Insufficient memory')
+        
+        # Detect argument parsing issues
+        if '--robot-type and --output-video are required' in line:
+            info['detected_issues'].append('Missing required arguments: --robot-type or --output-video')
+            if not info['primary_error']:
+                info['primary_error'] = 'Missing required arguments for simulation script'
+        
+        if 'unknown option:' in line.lower():
+            info['detected_issues'].append('Invalid command line arguments')
+            if not info['primary_error']:
+                info['primary_error'] = 'Invalid arguments passed to simulation script'
+        
+        if 'usage:' in line.lower() and ('options' in line.lower() or 'help' in line.lower()):
+            info['detected_issues'].append('Script showed help instead of running simulation')
+            if not info['primary_error']:
+                info['primary_error'] = 'Simulation script arguments not parsed correctly'
     
     return info
 
@@ -986,7 +1059,7 @@ async def run_simulation_in_docker(execution_id: str, robot_type: str, code_file
     
     # Define paths
     host_videos_dir = VIDEOS_DIR.absolute()
-    container_videos_dir = "/tmp/videos"
+    container_videos_dir = "/output"
     video_output_path = f"{container_videos_dir}/{execution_id}.mp4"
     host_video_path = host_videos_dir / f"{execution_id}.mp4"
     
@@ -1134,8 +1207,10 @@ if __name__ == "__main__":
             environment=environment,
             working_dir="/workspace",
             command=[
-                "bash", "-c", 
-                f"python /opt/simulation/run_simulation.py --robot-type {robot_type} --code-file user_code.py --output-video {video_output_path}"
+                "python3", "/opt/simulation/run_simulation.py",
+                "--robot-type", robot_type,
+                "--code-file", "user_code.py",
+                "--output-video", video_output_path
             ],
             detach=True,
             mem_limit="2g",
@@ -1152,6 +1227,21 @@ if __name__ == "__main__":
         container_exit_code = result['StatusCode']
         
         logger.info(f"Container {container_name} completed with status {container_exit_code}")
+        
+        # Save container logs to file for debugging
+        log_file = Path(f"temp/{execution_id}/simulation.log")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(log_file, 'w') as f:
+                f.write(f"Container: {container_name}\n")
+                f.write(f"Exit Code: {container_exit_code}\n")
+                f.write(f"Robot Type: {robot_type}\n")
+                f.write(f"Code File: {code_file}\n")
+                f.write(f"Output Video: {video_output_path}\n")
+                f.write(f"=== CONTAINER LOGS ===\n")
+                f.write(container_logs)
+        except Exception as e:
+            logger.warning(f"Failed to save logs to file: {e}")
         
         # Parse logs for specific error information
         error_info = parse_simulation_logs(container_logs)

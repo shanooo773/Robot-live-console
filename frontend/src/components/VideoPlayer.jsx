@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Box, Button, Text, Spinner, Alert, AlertIcon, Code } from "@chakra-ui/react";
-import { executeRobotCode } from "../api";
+import { Box, Button, Text, Spinner, Alert, AlertIcon, Code, Collapse, useDisclosure } from "@chakra-ui/react";
+import { executeRobotCode, getExecutionLogs, checkVideoExists } from "../api";
 
 const VideoPlayer = ({ editorRef, robot, codeValue }) => {
   const [videoUrl, setVideoUrl] = useState("");
@@ -9,6 +9,9 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
   const [error, setError] = useState("");
   const [executionId, setExecutionId] = useState("");
   const [videoLoadError, setVideoLoadError] = useState(false);
+  const [logsUrl, setLogsUrl] = useState("");
+  const [logs, setLogs] = useState("");
+  const { isOpen: isLogsOpen, onToggle: onLogsToggle } = useDisclosure();
 
   // Reset video load error when videoUrl changes
   useEffect(() => {
@@ -49,6 +52,8 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
       setError("");
       setExecutionId("");
       setVideoLoadError(false);
+      setLogsUrl("");
+      setLogs("");
 
       const result = await executeRobotCode(sourceCode, robot);
       
@@ -56,6 +61,9 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
         const fullVideoUrl = `http://localhost:8000${result.video_url}`;
         setVideoUrl(fullVideoUrl);
         setExecutionId(result.execution_id);
+        if (result.logs_url) {
+          setLogsUrl(result.logs_url);
+        }
         
         // Check if the video URL is accessible
         fetch(fullVideoUrl, { method: 'HEAD' })
@@ -90,6 +98,11 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
           });
       } else {
         setIsError(true);
+        setExecutionId(result.execution_id);
+        if (result.logs_url) {
+          setLogsUrl(result.logs_url);
+        }
+        
         // Enhanced error message parsing
         let errorMessage = result.error || "Failed to run simulation";
         
@@ -149,11 +162,27 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
   const checkVideoStatus = async () => {
     if (executionId) {
       try {
-        const response = await fetch(`http://localhost:8000/videos-check/${executionId}`);
-        const data = await response.json();
-        console.log('Video status:', data);
+        const response = await checkVideoExists(executionId);
+        console.log('Video status:', response);
       } catch (err) {
         console.error('Failed to check video status:', err);
+      }
+    }
+  };
+
+  const fetchExecutionLogs = async () => {
+    if (executionId) {
+      try {
+        const response = await getExecutionLogs(executionId);
+        console.log('Execution logs:', response);
+        if (response.available) {
+          setLogs(response.logs);
+        } else {
+          setLogs("No logs available for this execution");
+        }
+      } catch (err) {
+        console.error('Failed to fetch execution logs:', err);
+        setLogs("Failed to fetch logs: " + err.message);
       }
     }
   };
@@ -176,16 +205,36 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
       </Button>
 
       {executionId && (
-        <Button
-          variant="outline"
-          colorScheme="blue"
-          size="sm"
-          mb={4}
-          ml={2}
-          onClick={checkVideoStatus}
-        >
-          Debug Video Status
-        </Button>
+        <Box mb={4}>
+          <Button
+            variant="outline"
+            colorScheme="blue"
+            size="sm"
+            mr={2}
+            onClick={checkVideoStatus}
+          >
+            Debug Video Status
+          </Button>
+          <Button
+            variant="outline"
+            colorScheme="orange"
+            size="sm"
+            onClick={fetchExecutionLogs}
+          >
+            View Execution Logs
+          </Button>
+          {logs && (
+            <Button
+              variant="ghost"
+              colorScheme="orange"
+              size="sm"
+              ml={2}
+              onClick={onLogsToggle}
+            >
+              {isLogsOpen ? 'Hide Logs' : 'Show Logs'}
+            </Button>
+          )}
+        </Box>
       )}
 
       {isLoading && (
@@ -226,10 +275,41 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
               💡 Troubleshooting tips:
               <br />• Check if Docker is running: docker --version
               <br />• Build simulation image: ./setup.sh build
-              <br />• Check backend logs for detailed error information
+              <br />• Use "View Execution Logs" button for detailed error information
+              <br />• Check backend logs for more details
             </Text>
           </Box>
         </Alert>
+      )}
+
+      {logs && (
+        <Collapse in={isLogsOpen} animateOpacity>
+          <Box
+            mb={4}
+            p={4}
+            bg="#1a1a1a"
+            border="1px solid #333"
+            borderRadius="md"
+            maxHeight="300px"
+            overflowY="auto"
+          >
+            <Text color="orange.400" fontWeight="bold" mb={2}>
+              Execution Logs:
+            </Text>
+            <Code
+              display="block"
+              whiteSpace="pre-wrap"
+              p={3}
+              fontSize="sm"
+              bg="#0f0a19"
+              color="gray.300"
+              maxHeight="200px"
+              overflowY="auto"
+            >
+              {logs}
+            </Code>
+          </Box>
+        </Collapse>
       )}
 
       {videoUrl && !isLoading && !videoLoadError && (
