@@ -5,6 +5,7 @@ import platform
 import urllib.parse
 import subprocess
 import json
+from contextlib import asynccontextmanager
 try:
     import docker
     DOCKER_SDK_AVAILABLE = True
@@ -24,24 +25,6 @@ import time
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-app = FastAPI(title="Robot Simulation API", version="1.0.0")
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # Vite dev server
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Create directories for video storage
-VIDEOS_DIR = Path("videos")
-VIDEOS_DIR.mkdir(exist_ok=True)
-
-# Mount static files for video serving
-app.mount("/videos", StaticFiles(directory="videos"), name="videos")
 
 class DockerClientWrapper:
     """
@@ -272,6 +255,59 @@ except Exception as e:
     logger.error(f"Docker initialization failed: {e}")
     docker_client = None
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application lifespan events"""
+    # Startup
+    logger.info("Robot Simulation API starting up...")
+    
+    # Create necessary directories
+    Path("temp").mkdir(exist_ok=True)
+    Path("videos").mkdir(exist_ok=True)
+    
+    # Check if Docker image exists
+    try:
+        if docker_client and hasattr(docker_client, 'client') and docker_client.client:
+            docker_client.client.images.get("robot-simulation:latest")
+            logger.info("Docker image 'robot-simulation:latest' found")
+        elif docker_client and docker_client.use_cli:
+            # Use CLI to check for image
+            result = subprocess.run(['docker', 'images', '-q', 'robot-simulation:latest'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0 and result.stdout.strip():
+                logger.info("Docker image 'robot-simulation:latest' found via CLI")
+            else:
+                logger.warning("Docker image 'robot-simulation:latest' not found via CLI")
+        else:
+            logger.warning("Docker not available - cannot check for image")
+    except Exception as e:
+        logger.warning(f"Could not check for Docker image: {e}")
+        logger.warning("Docker image 'robot-simulation:latest' not found. Please build it using the setup script.")
+    
+    yield
+    
+    # Shutdown (if needed)
+    logger.info("Robot Simulation API shutting down...")
+
+# Create FastAPI app with lifespan
+app = FastAPI(title="Robot Simulation API", version="1.0.0", lifespan=lifespan)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # Vite dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Create directories for video storage
+VIDEOS_DIR = Path("videos")
+VIDEOS_DIR.mkdir(exist_ok=True)
+
+# Mount static files for video serving
+app.mount("/videos", StaticFiles(directory="videos"), name="videos")
+
 @app.get("/status")
 def get_status():
     return {"status": "Backend is running"}
@@ -413,7 +449,7 @@ async def run_simulation_in_docker(execution_id: str, robot_type: str, code_file
     
     try:
         # Run container
-        container = docker_client.containers.run(
+        container = docker_client.containers().run(
             image="robot-simulation:latest",
             name=container_name,
             volumes=volumes,
@@ -448,34 +484,6 @@ async def run_simulation_in_docker(execution_id: str, robot_type: str, code_file
     except Exception as e:
         logger.error(f"Docker execution error: {e}")
         raise Exception(f"Docker execution failed: {e}")
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the application"""
-    logger.info("Robot Simulation API starting up...")
-    
-    # Create necessary directories
-    Path("temp").mkdir(exist_ok=True)
-    Path("videos").mkdir(exist_ok=True)
-    
-    # Check if Docker image exists
-    try:
-        if docker_client and hasattr(docker_client, 'client') and docker_client.client:
-            docker_client.client.images.get("robot-simulation:latest")
-            logger.info("Docker image 'robot-simulation:latest' found")
-        elif docker_client and docker_client.use_cli:
-            # Use CLI to check for image
-            result = subprocess.run(['docker', 'images', '-q', 'robot-simulation:latest'], 
-                                  capture_output=True, text=True, timeout=10)
-            if result.returncode == 0 and result.stdout.strip():
-                logger.info("Docker image 'robot-simulation:latest' found via CLI")
-            else:
-                logger.warning("Docker image 'robot-simulation:latest' not found via CLI")
-        else:
-            logger.warning("Docker not available - cannot check for image")
-    except Exception as e:
-        logger.warning(f"Could not check for Docker image: {e}")
-        logger.warning("Docker image 'robot-simulation:latest' not found. Please build it using the setup script.")
 
 if __name__ == "__main__":
     import uvicorn
