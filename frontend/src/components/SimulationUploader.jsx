@@ -19,9 +19,25 @@ import {
   Heading,
   Badge,
   Flex,
-  Spacer
+  Spacer,
+  Textarea,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Code,
+  Spinner,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useDisclosure
 } from '@chakra-ui/react';
-import { FiUpload, FiPlay, FiDownload } from 'react-icons/fi';
+import { FiUpload, FiPlay, FiDownload, FiEye, FiInfo } from 'react-icons/fi';
+import { getExecutionLogs } from '../api';
 
 const SimulationUploader = () => {
   const [urdfFile, setUrdfFile] = useState(null);
@@ -31,6 +47,10 @@ const SimulationUploader = () => {
   const [running, setRunning] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [simulationResult, setSimulationResult] = useState(null);
+  const [logs, setLogs] = useState('');
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [simulationError, setSimulationError] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
   const handleFileChange = (file, type) => {
@@ -42,6 +62,8 @@ const SimulationUploader = () => {
     // Clear previous results when files change
     setUploadResult(null);
     setSimulationResult(null);
+    setLogs('');
+    setSimulationError(null);
   };
 
   const uploadFiles = async () => {
@@ -68,7 +90,8 @@ const SimulationUploader = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        throw new Error(errorData.detail || `Upload failed: ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -81,6 +104,7 @@ const SimulationUploader = () => {
         isClosable: true,
       });
     } catch (error) {
+      console.error('Upload error:', error);
       toast({
         title: 'Upload Failed',
         description: error.message,
@@ -90,6 +114,19 @@ const SimulationUploader = () => {
       });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const fetchLogs = async (executionId) => {
+    setLoadingLogs(true);
+    try {
+      const logsData = await getExecutionLogs(executionId);
+      setLogs(logsData.logs || 'No logs available');
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      setLogs(`Error fetching logs: ${error.message}`);
+    } finally {
+      setLoadingLogs(false);
     }
   };
 
@@ -107,6 +144,8 @@ const SimulationUploader = () => {
 
     setRunning(true);
     setSimulationResult(null);
+    setLogs('');
+    setSimulationError(null);
 
     try {
       const response = await fetch('http://localhost:8000/simulate', {
@@ -121,12 +160,13 @@ const SimulationUploader = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Simulation failed: ${response.statusText}`);
-      }
-
       const result = await response.json();
       setSimulationResult(result);
+
+      // Always fetch logs after simulation attempt
+      if (result.execution_id) {
+        await fetchLogs(result.execution_id);
+      }
 
       if (result.success) {
         toast({
@@ -137,18 +177,32 @@ const SimulationUploader = () => {
           isClosable: true,
         });
       } else {
+        // Store detailed error information
+        setSimulationError({
+          message: result.error,
+          executionId: result.execution_id,
+          details: result.error_details,
+          logsUrl: result.logs_url
+        });
+        
         toast({
           title: 'Simulation Failed',
-          description: result.error,
+          description: 'Click "View Error Details" for more information',
           status: 'error',
           duration: 5000,
           isClosable: true,
         });
       }
     } catch (error) {
+      console.error('Simulation error:', error);
+      setSimulationError({
+        message: error.message,
+        networkError: true
+      });
+      
       toast({
         title: 'Simulation Error',
-        description: error.message,
+        description: 'Network or server error occurred',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -167,6 +221,39 @@ const SimulationUploader = () => {
       link.click();
       document.body.removeChild(link);
     }
+  };
+
+  const formatLogOutput = (logText) => {
+    if (!logText) return 'No logs available';
+    
+    // Split logs into lines and add formatting
+    const lines = logText.split('\n');
+    return lines.map((line, index) => {
+      let lineClass = '';
+      if (line.includes('ERROR') || line.includes('FAILED')) {
+        lineClass = 'error-line';
+      } else if (line.includes('WARNING') || line.includes('WARN')) {
+        lineClass = 'warning-line';
+      } else if (line.includes('SUCCESS') || line.includes('completed successfully')) {
+        lineClass = 'success-line';
+      }
+      
+      return (
+        <Text 
+          key={index} 
+          fontSize="xs" 
+          fontFamily="monospace"
+          color={
+            lineClass === 'error-line' ? 'red.300' :
+            lineClass === 'warning-line' ? 'yellow.300' :
+            lineClass === 'success-line' ? 'green.300' :
+            'gray.300'
+          }
+        >
+          {line}
+        </Text>
+      );
+    });
   };
 
   return (
@@ -255,6 +342,9 @@ const SimulationUploader = () => {
                     <Text fontSize="sm">
                       URDF: {uploadResult.urdf_filename} | World: {uploadResult.world_filename}
                     </Text>
+                    <Text fontSize="xs" color="gray.300">
+                      Upload ID: {uploadResult.upload_id}
+                    </Text>
                   </Box>
                 </Alert>
               )}
@@ -313,6 +403,9 @@ const SimulationUploader = () => {
                     Running simulation... This may take up to {duration + 30} seconds
                   </Text>
                   <Progress isIndeterminate colorScheme="green" />
+                  <Text fontSize="xs" color="gray.400" mt={2}>
+                    The simulation will start ROS, launch Gazebo, spawn the robot, and record a video.
+                  </Text>
                 </Box>
               )}
 
@@ -329,15 +422,74 @@ const SimulationUploader = () => {
                   ) : (
                     <Alert status="error" bg="red.900" borderColor="red.500">
                       <AlertIcon />
-                      <Box>
+                      <Box flex="1">
                         <Text fontWeight="bold">Simulation failed</Text>
                         <Text fontSize="sm">{simulationResult.error}</Text>
+                        <HStack mt={2} spacing={2}>
+                          <Button size="xs" colorScheme="red" variant="outline" onClick={onOpen}>
+                            <FiInfo style={{ marginRight: '4px' }} />
+                            View Error Details
+                          </Button>
+                          {simulationResult.execution_id && (
+                            <Button 
+                              size="xs" 
+                              colorScheme="yellow" 
+                              variant="outline"
+                              onClick={() => fetchLogs(simulationResult.execution_id)}
+                              isLoading={loadingLogs}
+                            >
+                              <FiEye style={{ marginRight: '4px' }} />
+                              View Logs
+                            </Button>
+                          )}
+                        </HStack>
                       </Box>
                     </Alert>
                   )}
                 </Box>
               )}
             </Box>
+
+            {/* Simulation Logs */}
+            {logs && (
+              <>
+                <Divider borderColor="whiteAlpha.300" />
+                <Box>
+                  <Accordion allowToggle>
+                    <AccordionItem border="none">
+                      <AccordionButton 
+                        bg="blackAlpha.300" 
+                        _hover={{ bg: "blackAlpha.400" }}
+                        borderRadius="md"
+                      >
+                        <Box flex="1" textAlign="left">
+                          <HStack>
+                            <Text color="white" fontWeight="bold">
+                              Simulation Logs
+                            </Text>
+                            {loadingLogs && <Spinner size="sm" />}
+                          </HStack>
+                        </Box>
+                        <AccordionIcon color="white" />
+                      </AccordionButton>
+                      <AccordionPanel pb={4}>
+                        <Box
+                          bg="black"
+                          p={4}
+                          borderRadius="md"
+                          maxH="400px"
+                          overflowY="auto"
+                          border="1px solid"
+                          borderColor="whiteAlpha.300"
+                        >
+                          {formatLogOutput(logs)}
+                        </Box>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                </Box>
+              </>
+            )}
 
             {/* Video Results */}
             {simulationResult && simulationResult.success && simulationResult.video_url && (
@@ -381,6 +533,71 @@ const SimulationUploader = () => {
           </VStack>
         </CardBody>
       </Card>
+
+      {/* Error Details Dialog */}
+      <AlertDialog isOpen={isOpen} onClose={onClose}>
+        <AlertDialogOverlay>
+          <AlertDialogContent bg="gray.800" color="white" maxW="3xl">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Simulation Error Details
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              {simulationError && (
+                <VStack spacing={4} align="stretch">
+                  <Box>
+                    <Text fontWeight="bold" color="red.300" mb={2}>Error Message:</Text>
+                    <Code p={3} display="block" whiteSpace="pre-wrap" bg="red.900" color="red.100">
+                      {simulationError.message}
+                    </Code>
+                  </Box>
+                  
+                  {simulationError.executionId && (
+                    <Box>
+                      <Text fontWeight="bold" color="blue.300" mb={2}>Execution ID:</Text>
+                      <Code p={2} bg="blue.900" color="blue.100">
+                        {simulationError.executionId}
+                      </Code>
+                    </Box>
+                  )}
+
+                  {simulationError.networkError && (
+                    <Box>
+                      <Text fontWeight="bold" color="orange.300" mb={2}>Troubleshooting Steps:</Text>
+                      <VStack align="start" spacing={1} fontSize="sm" color="gray.300">
+                        <Text>1. Check if the backend server is running on http://localhost:8000</Text>
+                        <Text>2. Verify Docker is installed and running</Text>
+                        <Text>3. Ensure the robot-simulation Docker image is built</Text>
+                        <Text>4. Check your internet connection</Text>
+                        <Text>5. Look at the browser console for more details</Text>
+                      </VStack>
+                    </Box>
+                  )}
+
+                  {!simulationError.networkError && (
+                    <Box>
+                      <Text fontWeight="bold" color="yellow.300" mb={2}>Common Solutions:</Text>
+                      <VStack align="start" spacing={1} fontSize="sm" color="gray.300">
+                        <Text>1. Verify URDF and World files are valid and properly formatted</Text>
+                        <Text>2. Check if the robot model is compatible with Gazebo</Text>
+                        <Text>3. Ensure sufficient system resources (RAM, CPU)</Text>
+                        <Text>4. Try reducing simulation duration if timeout occurred</Text>
+                        <Text>5. Check the simulation logs for more specific error information</Text>
+                      </VStack>
+                    </Box>
+                  )}
+                </VStack>
+              )}
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button colorScheme="blue" onClick={onClose}>
+                Close
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 };

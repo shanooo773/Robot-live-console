@@ -181,6 +181,14 @@ build_docker_image() {
     
     print_status "Building Docker image for ROS simulation..."
     
+    # Check Docker daemon is running
+    if ! docker info >/dev/null 2>&1; then
+        print_error "Docker daemon is not running. Please start Docker first."
+        print_status "On Linux: sudo systemctl start docker"
+        print_status "On Windows/Mac: Start Docker Desktop"
+        exit 1
+    fi
+    
     if docker images | grep -q "${DOCKER_IMAGE_NAME}.*${DOCKER_TAG}"; then
         print_warning "Docker image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} already exists"
         read -p "Do you want to rebuild it? (y/N): " rebuild
@@ -191,12 +199,48 @@ build_docker_image() {
     fi
     
     print_status "This may take 10-15 minutes for the first build..."
+    print_status "Building with enhanced error checking and dependency validation..."
+    
     cd docker
     
-    if docker build -t "${DOCKER_IMAGE_NAME}:${DOCKER_TAG}" .; then
-        print_success "Docker image built successfully!"
+    # Enhanced Docker build with better error handling
+    if docker build \
+        --progress=plain \
+        --no-cache \
+        -t "${DOCKER_IMAGE_NAME}:${DOCKER_TAG}" \
+        . 2>&1 | tee ../docker_build.log; then
+        
+        # Verify the image was created successfully
+        if docker images | grep -q "${DOCKER_IMAGE_NAME}.*${DOCKER_TAG}"; then
+            print_success "Docker image built successfully!"
+            
+            # Test the image by running a simple command
+            print_status "Testing Docker image functionality..."
+            if docker run --rm "${DOCKER_IMAGE_NAME}:${DOCKER_TAG}" /bin/bash -c "which roscore && which gazebo && which ffmpeg" >/dev/null 2>&1; then
+                print_success "Docker image test passed - all required components found"
+            else
+                print_warning "Docker image built but some components may be missing"
+                print_status "Check docker_build.log for details"
+            fi
+        else
+            print_error "Docker image was not created successfully"
+            print_status "Check docker_build.log for build details"
+            exit 1
+        fi
     else
         print_error "Failed to build Docker image"
+        print_status "Build log saved to docker_build.log"
+        print_status "Common issues:"
+        print_status "- Insufficient disk space"
+        print_status "- Network connectivity issues"
+        print_status "- Docker daemon not running properly"
+        print_status "- Insufficient memory for build process"
+        
+        # Show the last few lines of the build log for immediate debugging
+        if [ -f "../docker_build.log" ]; then
+            print_status "Last 20 lines of build log:"
+            tail -20 ../docker_build.log
+        fi
         exit 1
     fi
     

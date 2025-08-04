@@ -473,6 +473,69 @@ ROBOT_CONFIGS = {
     }
 }
 
+@app.post("/cleanup-containers")
+def cleanup_old_containers():
+    """Clean up old simulation containers"""
+    try:
+        if not docker_client:
+            return {"success": False, "error": "Docker not available"}
+        
+        removed_containers = []
+        errors = []
+        
+        # Get all containers (including stopped ones)
+        try:
+            if hasattr(docker_client, 'client') and docker_client.client:
+                containers = docker_client.client.containers.list(all=True)
+                for container in containers:
+                    if container.name.startswith('robot-sim-') or container.name.startswith('robot-real-sim-'):
+                        try:
+                            container.remove(force=True)
+                            removed_containers.append(container.name)
+                        except Exception as e:
+                            errors.append(f"Failed to remove {container.name}: {str(e)}")
+            elif docker_client.use_cli:
+                # Use CLI to list and remove containers
+                result = subprocess.run(['docker', 'ps', '-a', '--filter', 'name=robot-sim-', '--format', '{{.Names}}'], 
+                                     capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    container_names = result.stdout.strip().split('\n')
+                    for name in container_names:
+                        if name:  # Skip empty lines
+                            try:
+                                subprocess.run(['docker', 'rm', '-f', name], 
+                                             capture_output=True, timeout=10)
+                                removed_containers.append(name)
+                            except Exception as e:
+                                errors.append(f"Failed to remove {name}: {str(e)}")
+                
+                # Also check for robot-real-sim- containers
+                result = subprocess.run(['docker', 'ps', '-a', '--filter', 'name=robot-real-sim-', '--format', '{{.Names}}'], 
+                                     capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    container_names = result.stdout.strip().split('\n')
+                    for name in container_names:
+                        if name:  # Skip empty lines
+                            try:
+                                subprocess.run(['docker', 'rm', '-f', name], 
+                                             capture_output=True, timeout=10)
+                                removed_containers.append(name)
+                            except Exception as e:
+                                errors.append(f"Failed to remove {name}: {str(e)}")
+        except Exception as e:
+            errors.append(f"Failed to list containers: {str(e)}")
+        
+        return {
+            "success": True,
+            "removed_containers": removed_containers,
+            "errors": errors,
+            "total_removed": len(removed_containers)
+        }
+        
+    except Exception as e:
+        logger.error(f"Container cleanup error: {e}")
+        return {"success": False, "error": str(e)}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for system monitoring"""
@@ -880,7 +943,7 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
             mem_limit="4g",  # Increased memory for Gazebo
             cpu_quota=200000,  # Allow 2 CPUs for Gazebo
             network_mode="none",  # Disable networking for security
-            remove=True
+            remove=False  # Don't auto-remove so container is visible in docker ps -a
         )
         
         logger.info(f"Container {container_name} started, waiting for completion...")
@@ -891,6 +954,19 @@ async def run_real_simulation_in_docker(execution_id: str, urdf_path: str, world
         container_exit_code = result['StatusCode']
         
         logger.info(f"Container {container_name} completed with status {container_exit_code}")
+        
+        # Manually remove container after getting logs to keep docker ps clean
+        try:
+            if hasattr(container, 'remove'):
+                container.remove()
+                logger.info(f"Container {container_name} removed successfully")
+            elif docker_client.use_cli:
+                # Use CLI to remove container
+                subprocess.run(['docker', 'rm', container_name], 
+                             capture_output=True, timeout=10)
+                logger.info(f"Container {container_name} removed via CLI")
+        except Exception as e:
+            logger.warning(f"Failed to remove container {container_name}: {e}")
         
         # Save container logs to file for debugging
         log_file = Path(f"temp/{execution_id}/simulation.log")
@@ -1217,7 +1293,7 @@ if __name__ == "__main__":
             mem_limit="2g",
             cpu_quota=100000,  # Limit to 1 CPU
             network_mode="none",  # Disable networking for security
-            remove=True
+            remove=False  # Don't auto-remove so container is visible in docker ps -a
         )
         
         logger.info(f"Container {container_name} started, waiting for completion...")
@@ -1228,6 +1304,19 @@ if __name__ == "__main__":
         container_exit_code = result['StatusCode']
         
         logger.info(f"Container {container_name} completed with status {container_exit_code}")
+        
+        # Manually remove container after getting logs to keep docker ps clean
+        try:
+            if hasattr(container, 'remove'):
+                container.remove()
+                logger.info(f"Container {container_name} removed successfully")
+            elif docker_client.use_cli:
+                # Use CLI to remove container
+                subprocess.run(['docker', 'rm', container_name], 
+                             capture_output=True, timeout=10)
+                logger.info(f"Container {container_name} removed via CLI")
+        except Exception as e:
+            logger.warning(f"Failed to remove container {container_name}: {e}")
         
         # Save container logs to file for debugging
         log_file = Path(f"temp/{execution_id}/simulation.log")

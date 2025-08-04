@@ -18,13 +18,15 @@ import {
   getBackendStatus, 
   getDockerStatus, 
   getVideosDebugInfo,
-  checkVideoExists 
+  checkVideoExists,
+  cleanupContainers
 } from "../api";
 
 const DebugPanel = () => {
   const [debugData, setDebugData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [testExecutionId, setTestExecutionId] = useState("");
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   const runDiagnostics = async () => {
     setIsLoading(true);
@@ -80,6 +82,21 @@ const DebugPanel = () => {
     }
   };
 
+  const handleCleanupContainers = async () => {
+    setIsCleaningUp(true);
+    try {
+      const result = await cleanupContainers();
+      setDebugData(prev => ({ ...prev, cleanup: result }));
+    } catch (error) {
+      setDebugData(prev => ({ 
+        ...prev, 
+        cleanup: { success: false, error: error.message } 
+      }));
+    } finally {
+      setIsCleaningUp(false);
+    }
+  };
+
   return (
     <Box bg="#1a1a1a" p={6} borderRadius="md" border="1px solid #333">
       <Text fontSize="xl" mb={4} color="blue.400">🔧 System Diagnostics</Text>
@@ -93,6 +110,37 @@ const DebugPanel = () => {
         >
           Run Full Diagnostics
         </Button>
+
+        <Button 
+          onClick={handleCleanupContainers} 
+          isLoading={isCleaningUp}
+          colorScheme="red"
+          variant="outline"
+          size="sm"
+        >
+          Cleanup Old Docker Containers
+        </Button>
+
+        {debugData.cleanup && (
+          <Alert status={debugData.cleanup.success ? "success" : "error"}>
+            <AlertIcon />
+            <Box>
+              <Text fontWeight="bold">
+                Container Cleanup: {debugData.cleanup.success ? "Success" : "Failed"}
+              </Text>
+              {debugData.cleanup.success && (
+                <Text fontSize="sm">
+                  Removed {debugData.cleanup.total_removed} containers
+                </Text>
+              )}
+              {debugData.cleanup.error && (
+                <Text fontSize="sm" color="red.300">
+                  {debugData.cleanup.error}
+                </Text>
+              )}
+            </Box>
+          </Alert>
+        )}
 
         {debugData.backendStatus && (
           <Alert status={debugData.backendStatus.includes("✅") ? "success" : "error"}>
