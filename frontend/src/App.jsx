@@ -1,34 +1,54 @@
-import { Box, VStack, HStack, Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
+import { useState } from "react";
+import { Box } from "@chakra-ui/react";
+import LandingPage from "./components/LandingPage";
+import AuthPage from "./components/AuthPage";
+import BookingPage from "./components/BookingPage";
 import CodeEditor from "./components/CodeEditor";
-import DebugPanel from "./components/DebugPanel";
-import SimulationUploader from "./components/SimulationUploader";
 
 function App() {
+  const [currentPage, setCurrentPage] = useState("landing"); // landing, auth, booking, editor
+  const [user, setUser] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+
+  const handleAuth = (userData) => {
+    setUser(userData);
+    setCurrentPage("booking");
+  };
+
+  const handleBooking = (slot) => {
+    setSelectedSlot(slot);
+    setCurrentPage("editor");
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setSelectedSlot(null);
+    setCurrentPage("landing");
+  };
+
   return (
-    <Box minH="100vh" bg="#0f0a19" color="gray.500" px={6} py={8}>
-      <VStack spacing={6}>
-        <DebugPanel />
-        
-        <Tabs variant="enclosed" colorScheme="blue" width="100%">
-          <TabList bg="blackAlpha.300" borderColor="whiteAlpha.300">
-            <Tab color="gray.300" _selected={{ color: "white", bg: "blue.600" }}>
-              Code Editor
-            </Tab>
-            <Tab color="gray.300" _selected={{ color: "white", bg: "blue.600" }}>
-              Simulation Uploader
-            </Tab>
-          </TabList>
-          
-          <TabPanels>
-            <TabPanel p={0} pt={6}>
-              <CodeEditor />
-            </TabPanel>
-            <TabPanel p={0} pt={6}>
-              <SimulationUploader />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </VStack>
+    <Box minH="100vh" bg="#0f0a19" color="gray.500">
+      {currentPage === "landing" && (
+        <LandingPage onGetStarted={() => setCurrentPage("auth")} />
+      )}
+      {currentPage === "auth" && (
+        <AuthPage onAuth={handleAuth} onBack={() => setCurrentPage("landing")} />
+      )}
+      {currentPage === "booking" && (
+        <BookingPage 
+          user={user} 
+          onBooking={handleBooking} 
+          onLogout={handleLogout}
+        />
+      )}
+      {currentPage === "editor" && (
+        <CodeEditor 
+          user={user} 
+          slot={selectedSlot} 
+          onBack={() => setCurrentPage("booking")}
+          onLogout={handleLogout}
+        />
+      )}
     </Box>
   );
 }
