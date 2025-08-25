@@ -299,6 +299,211 @@ The simulation runs in a secure Docker container with:
 3. Make your changes and test thoroughly
 4. Submit a pull request with a clear description
 
+---
+
+# 🖥️ VNC/NoVNC Gazebo GUI Access
+
+This repository now supports **browser-based Gazebo GUI access** via VNC and NoVNC, perfect for running on remote VPS servers.
+
+## 🚀 Quick Start with VNC/NoVNC
+
+### Prerequisites for VNC Setup
+- Docker and Docker Compose
+- 4GB+ RAM (for Gazebo GUI)
+- Port 8080 and 5901 available
+
+### 1. Local Development
+
+```bash
+# Clone repository
+git clone https://github.com/shanooo773/Robot-live-console.git
+cd Robot-live-console
+
+# Build and start with docker-compose
+docker-compose up -d
+
+# Access Gazebo GUI in browser
+open http://localhost:8080
+```
+
+### 2. VPS Deployment 
+
+```bash
+# On your VPS
+git clone https://github.com/shanooo773/Robot-live-console.git
+cd Robot-live-console
+
+# Build and start the container
+docker-compose up -d
+
+# Access from anywhere via browser
+# Replace YOUR-VPS-IP with your server's IP
+open http://YOUR-VPS-IP:8080
+```
+
+## 🔑 VNC Access Details
+
+- **NoVNC Web Interface**: `http://<VPS-IP>:8080`
+- **Direct VNC**: `<VPS-IP>:5901` 
+- **Default VNC Password**: `gazebo`
+- **Display Resolution**: 1024x768 (configurable)
+
+## 🗺️ Custom Gazebo Worlds
+
+### Adding Your Own World Files
+
+1. **Place world files** in the `custom_worlds/` directory:
+   ```bash
+   cp my_custom_world.world custom_worlds/
+   ```
+
+2. **Restart the container** to mount new files:
+   ```bash
+   docker-compose restart gazebo
+   ```
+
+3. **Access in Gazebo**:
+   - Open File → Open World
+   - Navigate to `/opt/simulation/custom_worlds/`
+   - Select your world file
+
+### Sample World File
+Create `custom_worlds/sample.world`:
+```xml
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="sample_world">
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <!-- Add your custom models here -->
+  </world>
+</sdf>
+```
+
+## 🐳 Docker Compose Configuration
+
+The `docker-compose.yml` includes:
+
+- **Service**: `gazebo` - Main Gazebo GUI container
+- **Ports**: 
+  - `8080:8080` - NoVNC web interface
+  - `5901:5901` - VNC server
+- **Volumes**:
+  - `./docker/robots/worlds` - Built-in world files
+  - `./custom_worlds` - Your custom world files
+- **Auto-restart**: Container restarts unless manually stopped
+
+## 🔧 Configuration Options
+
+### Change VNC Password
+```bash
+# Modify docker-compose.yml
+environment:
+  - VNC_PASSWORD=your_new_password
+
+# Rebuild container
+docker-compose up -d --build
+```
+
+### Change Display Resolution
+Edit the VNC geometry in `docker/Dockerfile`:
+```bash
+vncserver :1 -geometry 1920x1080 -depth 24 -SecurityTypes None
+```
+
+### Custom Gazebo Startup
+Modify `/root/.vnc/xstartup` in the Dockerfile to launch specific worlds:
+```bash
+gazebo --verbose /opt/simulation/custom_worlds/my_world.world &
+```
+
+## 🛠️ Management Commands
+
+```bash
+# Start Gazebo GUI
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs gazebo
+
+# Rebuild after changes
+docker-compose up -d --build
+
+# Access container shell
+docker-compose exec gazebo bash
+```
+
+## 🌐 Network and Security
+
+### Firewall Configuration (VPS)
+```bash
+# Allow VNC and NoVNC ports
+sudo ufw allow 8080/tcp  # NoVNC
+sudo ufw allow 5901/tcp  # VNC (optional)
+```
+
+### SSH Tunneling (Alternative)
+For enhanced security, access via SSH tunnel:
+```bash
+# On your local machine
+ssh -L 8080:localhost:8080 user@your-vps-ip
+
+# Then access via localhost:8080
+```
+
+## 🐛 Troubleshooting VNC/NoVNC
+
+### Common Issues
+
+1. **NoVNC shows black screen**
+   ```bash
+   # Check if VNC server is running
+   docker-compose exec gazebo ps aux | grep vnc
+   
+   # Restart the container
+   docker-compose restart gazebo
+   ```
+
+2. **Cannot connect to VNC**
+   ```bash
+   # Check port accessibility
+   curl http://your-vps-ip:8080
+   
+   # Check container logs
+   docker-compose logs gazebo
+   ```
+
+3. **Gazebo fails to start**
+   ```bash
+   # Check available memory
+   free -h
+   
+   # Check GPU/3D acceleration
+   docker-compose exec gazebo glxinfo | grep rendering
+   ```
+
+4. **Custom world not loading**
+   ```bash
+   # Verify file permissions
+   ls -la custom_worlds/
+   
+   # Check mount inside container
+   docker-compose exec gazebo ls -la /opt/simulation/custom_worlds/
+   ```
+
+### Performance Optimization
+
+- **Increase container memory**: Add `mem_limit: 4g` to docker-compose.yml
+- **Enable GPU acceleration**: Add GPU support for better performance
+- **Reduce display quality**: Lower VNC color depth for faster connection
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
