@@ -53,6 +53,23 @@ RUN apt-get update && apt-get install -y \
     xauth \
     && rm -rf /var/lib/apt/lists/*
 
+# Install VNC and NoVNC dependencies for browser-based GUI access
+RUN apt-get update && apt-get install -y \
+    tigervnc-standalone-server \
+    tigervnc-xorg-extension \
+    websockify \
+    python3-numpy \
+    openbox \
+    xterm \
+    git \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install NoVNC
+RUN git clone https://github.com/novnc/noVNC.git /opt/novnc && \
+    git clone https://github.com/novnc/websockify /opt/novnc/utils/websockify && \
+    chmod +x /opt/novnc/utils/novnc_proxy
+
 # Initialize rosdep
 RUN rosdep init && rosdep update
 
@@ -79,6 +96,79 @@ RUN chmod +x /opt/simulation/record_simulation.sh && \
 RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc \
     && echo "export ROS_PACKAGE_PATH=/opt/simulation:$ROS_PACKAGE_PATH" >> /root/.bashrc
 
+# Set up VNC configuration
+RUN mkdir -p /root/.vnc && \
+    echo "gazebo" | vncpasswd -f > /root/.vnc/passwd && \
+    chmod 600 /root/.vnc/passwd
+
+# Create VNC xstartup script
+RUN echo '#!/bin/bash\n\
+export DISPLAY=:1\n\
+source /opt/ros/noetic/setup.bash\n\
+export ROS_PACKAGE_PATH=/opt/simulation:$ROS_PACKAGE_PATH\n\
+export PYTHONPATH=/opt/simulation:$PYTHONPATH\n\
+\n\
+# Start window manager\n\
+openbox-session &\n\
+WM_PID=$!\n\
+\n\
+# Wait a moment for window manager\n\
+sleep 2\n\
+\n\
+# Start roscore in background\n\
+echo "Starting ROS core..."\n\
+roscore &\n\
+ROS_PID=$!\n\
+sleep 5\n\
+\n\
+# Launch Gazebo with GUI\n\
+echo "Starting Gazebo..."\n\
+gazebo --verbose /opt/simulation/robots/worlds/empty.world &\n\
+GAZEBO_PID=$!\n\
+\n\
+# Function to cleanup processes\n\
+cleanup() {\n\
+    echo "Cleaning up processes..."\n\
+    kill $GAZEBO_PID $ROS_PID $WM_PID 2>/dev/null || true\n\
+    exit 0\n\
+}\n\
+\n\
+# Set up signal handlers\n\
+trap cleanup SIGINT SIGTERM\n\
+\n\
+# Keep the session alive\n\
+wait $GAZEBO_PID' > /root/.vnc/xstartup && \
+    chmod +x /root/.vnc/xstartup
+
+# Create startup script for VNC/NoVNC
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Source ROS environment\n\
+source /opt/ros/noetic/setup.bash\n\
+export ROS_PACKAGE_PATH=/opt/simulation:$ROS_PACKAGE_PATH\n\
+export PYTHONPATH=/opt/simulation:$PYTHONPATH\n\
+\n\
+# Create necessary directories with proper permissions\n\
+mkdir -p /tmp /output /workspace /root/.vnc\n\
+chmod 777 /tmp /output /workspace\n\
+\n\
+# Start VNC server\n\
+echo "Starting VNC server..."\n\
+vncserver :1 -geometry 1024x768 -depth 24 -SecurityTypes None\n\
+\n\
+# Start NoVNC websocket proxy\n\
+echo "Starting NoVNC web interface..."\n\
+cd /opt/novnc\n\
+./utils/websockify --web . 8080 localhost:5901 &\n\
+\n\
+echo "VNC server started on :5901"\n\
+echo "NoVNC web interface available on port 8080"\n\
+echo "Access via browser: http://localhost:8080"\n\
+\n\
+# Keep container running\n\
+tail -f /dev/null' > /start-vnc.sh && chmod +x /start-vnc.sh
+
 # Create entrypoint script that sources ROS
 RUN echo '#!/bin/bash\n\
 set -e\n\
@@ -90,7 +180,10 @@ mkdir -p /tmp /output /workspace\n\
 chmod 777 /tmp /output /workspace\n\
 exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
 
+# Expose VNC and NoVNC ports
+EXPOSE 5901 8080
+
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Default command
-CMD ["bash", "/opt/simulation/record_simulation.sh", "--help"]
+# Default command - start VNC/NoVNC interface
+CMD ["/start-vnc.sh"]
