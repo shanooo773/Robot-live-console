@@ -136,6 +136,18 @@ const AuthPage = ({ onAuth, onBack }) => {
     }
   };
 
+  const handleDummyLogin = () => {
+    const dummyUser = {
+      username: "test_user",
+      email: "dummy@example.com",
+      role: "tester",
+    };
+    // Save dummy session flag
+    localStorage.setItem("isDummy", "true");
+    // Trigger login state in parent
+    onAuth(dummyUser);
+  };
+
   return (
     <Container maxW="md" py={20}>
       <VStack spacing={8}>
@@ -205,6 +217,18 @@ const AuthPage = ({ onAuth, onBack }) => {
                         loadingText="Signing in..."
                       >
                         Sign In
+                      </Button>
+
+                      <Button
+                        type="button"
+                        onClick={handleDummyLogin}
+                        variant="outline"
+                        colorScheme="gray"
+                        size="lg"
+                        w="full"
+                        marginTop="10px"
+                      >
+                        Dummy Sign-In
                       </Button>
                     </VStack>
                   </form>

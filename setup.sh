@@ -281,6 +281,40 @@ setup_backend() {
     print_success "Backend setup complete!"
 }
 
+# Function to setup simulation service
+setup_simulation_service() {
+    print_status "Setting up simulation service..."
+    
+    cd simulation-service
+    
+    # Create virtual environment if it doesn't exist
+    if [ ! -d "venv" ]; then
+        print_status "Creating Python virtual environment for simulation service..."
+        python -m venv venv
+    fi
+    
+    # Activate virtual environment and install dependencies
+    print_status "Installing simulation service dependencies..."
+    # Cross-platform virtual environment activation
+    if [ -f "venv/Scripts/activate" ]; then
+        # Windows style
+        source venv/Scripts/activate
+    elif [ -f "venv/bin/activate" ]; then
+        # Unix style
+        source venv/bin/activate
+    else
+        print_error "Could not find virtual environment activation script for simulation service"
+        exit 1
+    fi
+    pip install -r requirements.txt
+    
+    # Create necessary directories
+    mkdir -p videos
+    
+    cd ..
+    print_success "Simulation service setup complete!"
+}
+
 # Function to setup frontend
 setup_frontend() {
     print_status "Setting up React frontend..."
@@ -566,6 +600,7 @@ main() {
             if validate_environment; then
                 build_docker_image
                 setup_backend
+                setup_simulation_service
                 setup_frontend
                 start_backend
                 start_frontend
@@ -595,6 +630,7 @@ main() {
             check_requirements
             load_env
             setup_backend
+            setup_simulation_service
             setup_frontend
             ;;
         "status")
