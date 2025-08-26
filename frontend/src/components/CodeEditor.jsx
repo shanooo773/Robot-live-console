@@ -15,6 +15,8 @@ import {
 } from "@chakra-ui/react";
 import { Editor } from "@monaco-editor/react";
 import RobotSelector from "./RobotSelector";
+import LanguageSelector from "./LanguageSelector";
+import LiveResults from "./LiveResults";
 import { ROBOT_CODE_SNIPPETS } from "../constants";
 import VideoPlayer from "./VideoPlayer";
 
@@ -27,7 +29,8 @@ const robotNames = {
 const CodeEditor = ({ user, slot, onBack, onLogout }) => {
   const editorRef = useRef();
   const [robot, setRobot] = useState(slot?.robotType || "turtlebot");
-  const [value, setValue] = useState(ROBOT_CODE_SNIPPETS[slot?.robotType || "turtlebot"]);
+  const [language, setLanguage] = useState("python");
+  const [value, setValue] = useState(ROBOT_CODE_SNIPPETS["python"][slot?.robotType || "turtlebot"]);
 
   const onMount = (editor) => {
     editorRef.current = editor;
@@ -36,7 +39,12 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
 
   const onSelect = (robotType) => {
     setRobot(robotType);
-    setValue(ROBOT_CODE_SNIPPETS[robotType]);
+    setValue(ROBOT_CODE_SNIPPETS[language][robotType]);
+  };
+
+  const onLanguageSelect = (languageType) => {
+    setLanguage(languageType);
+    setValue(ROBOT_CODE_SNIPPETS[languageType][robot]);
   };
 
   return (
@@ -97,7 +105,10 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
             <HStack spacing={6} align="start">
               <Box w="50%">
                 <VStack spacing={4} align="start">
-                  <RobotSelector robot={robot} onSelect={onSelect} />
+                  <HStack spacing={4}>
+                    <RobotSelector robot={robot} onSelect={onSelect} />
+                    <LanguageSelector language={language} onSelect={onLanguageSelect} />
+                  </HStack>
                   <Box w="full">
                     <Editor
                       options={{
@@ -111,8 +122,8 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
                       }}
                       height="75vh"
                       theme="vs-dark"
-                      language="python"
-                      defaultValue={ROBOT_CODE_SNIPPETS[robot]}
+                      language={language === "cpp" ? "cpp" : "python"}
+                      defaultValue={ROBOT_CODE_SNIPPETS[language][robot]}
                       onMount={onMount}
                       value={value}
                       onChange={(value) => setValue(value)}
@@ -122,7 +133,27 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
               </Box>
               
               <Box w="50%">
-                <VideoPlayer editorRef={editorRef} robot={robot} codeValue={value} />
+                <VStack spacing={4} align="start" h="100%">
+                  {/* Live Results Panel */}
+                  <Box w="full">
+                    <Text mb={2} fontSize="lg" color="white" fontWeight="bold">
+                      Live Results
+                    </Text>
+                    <Box h="35vh">
+                      <LiveResults robot={robot} />
+                    </Box>
+                  </Box>
+                  
+                  {/* Gazebo Simulation Panel */}
+                  <Box w="full">
+                    <Text mb={2} fontSize="lg" color="white" fontWeight="bold">
+                      Gazebo Simulation
+                    </Text>
+                    <Box h="35vh">
+                      <VideoPlayer editorRef={editorRef} robot={robot} codeValue={value} />
+                    </Box>
+                  </Box>
+                </VStack>
               </Box>
             </HStack>
           </CardBody>
