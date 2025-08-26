@@ -17,6 +17,13 @@ import { Editor } from "@monaco-editor/react";
 import RobotSelector from "./RobotSelector";
 import { ROBOT_CODE_SNIPPETS } from "../constants";
 import VideoPlayer from "./VideoPlayer";
+import { motion } from "framer-motion";
+
+// Motion components
+const MotionBox = motion(Box);
+const MotionCard = motion(Card);
+const MotionVStack = motion(VStack);
+const MotionHStack = motion(HStack);
 
 const robotNames = {
   turtlebot: { name: "TurtleBot3", emoji: "🤖" },
@@ -41,30 +48,59 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
 
   return (
     <Container maxW="7xl" py={8}>
-      <VStack spacing={6}>
+      <MotionVStack 
+        spacing={6}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
         {/* Session Header */}
-        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
+        <MotionCard 
+          w="full" 
+          variant="glassmorphism"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
           <CardHeader>
             <HStack justify="space-between">
-              <VStack align="start" spacing={2}>
-                <HStack>
-                  <Avatar size="sm" name={user.name} />
+              <VStack align="start" spacing={3}>
+                <HStack spacing={3}>
+                  <Avatar size="md" name={user.name} />
                   <VStack align="start" spacing={0}>
-                    <Text color="white" fontWeight="bold">{user.name}</Text>
+                    <Text color="white" fontWeight="bold" fontSize="lg">{user.name}</Text>
                     <Text color="gray.400" fontSize="sm">{user.email}</Text>
                   </VStack>
                 </HStack>
                 
                 {slot && (
                   <HStack spacing={4}>
-                    <Badge colorScheme="green">Active Session</Badge>
-                    <HStack>
-                      <Text fontSize="lg">{robotNames[slot.robotType].emoji}</Text>
-                      <Text color="gray.300">
+                    <Badge 
+                      variant="gradient" 
+                      fontSize="sm"
+                      px={3}
+                      py={1}
+                    >
+                      Active Session
+                    </Badge>
+                    <HStack spacing={2}>
+                      <MotionBox
+                        fontSize="xl"
+                        animate={{
+                          rotate: [0, 10, -10, 0],
+                          transition: {
+                            duration: 3,
+                            repeat: Infinity,
+                          }
+                        }}
+                      >
+                        {robotNames[slot.robotType].emoji}
+                      </MotionBox>
+                      <Text color="white" fontWeight="500">
                         {robotNames[slot.robotType].name}
                       </Text>
                     </HStack>
-                    <Text color="gray.400">
+                    <Text color="gray.400" fontSize="sm">
                       {new Date(slot.date).toLocaleDateString('en-US', { 
                         month: 'short', 
                         day: 'numeric' 
@@ -74,60 +110,113 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
                 )}
               </VStack>
               
-              <HStack>
-                <Button variant="ghost" onClick={onBack} color="gray.400">
+              <HStack spacing={2}>
+                <Button 
+                  variant="glassmorphism" 
+                  onClick={onBack} 
+                  _hover={{
+                    transform: "translateY(-2px)",
+                    background: "rgba(255, 255, 255, 0.2)",
+                  }}
+                >
                   ← Back to Booking
                 </Button>
-                <Button variant="ghost" onClick={onLogout} color="gray.400">
+                <Button 
+                  variant="glassmorphism" 
+                  onClick={onLogout}
+                  _hover={{
+                    transform: "translateY(-2px)",
+                    background: "rgba(255, 255, 255, 0.2)",
+                  }}
+                >
                   Logout
                 </Button>
               </HStack>
             </HStack>
           </CardHeader>
-        </Card>
-
+        </MotionCard>
         {/* Main Editor and Results */}
-        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
+        <MotionCard 
+          w="full" 
+          variant="glassmorphism"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
           <CardHeader>
-            <Text fontSize="xl" fontWeight="bold" color="white">
+            <Text 
+              fontSize="2xl" 
+              fontWeight="bold" 
+              bgGradient="linear(to-r, #667eea, #764ba2)"
+              bgClip="text"
+            >
               Robot Programming Console
             </Text>
           </CardHeader>
           <CardBody>
-            <HStack spacing={6} align="start">
-              <Box w="50%">
+            <HStack spacing={8} align="start">
+              {/* Code Editor Section */}
+              <MotionBox 
+                w="50%"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
                 <VStack spacing={4} align="start">
                   <RobotSelector robot={robot} onSelect={onSelect} />
-                  <Box w="full">
-                    <Editor
-                      options={{
-                        minimap: {
-                          enabled: false,
-                        },
-                        fontSize: 14,
-                        lineNumbers: "on",
-                        automaticLayout: true,
-                        scrollBeyondLastLine: false,
-                      }}
-                      height="75vh"
-                      theme="vs-dark"
-                      language="python"
-                      defaultValue={ROBOT_CODE_SNIPPETS[robot]}
-                      onMount={onMount}
-                      value={value}
-                      onChange={(value) => setValue(value)}
-                    />
-                  </Box>
+                  <MotionBox 
+                    w="full"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                  >
+                    <Box
+                      borderRadius="xl"
+                      overflow="hidden"
+                      border="1px solid rgba(255, 255, 255, 0.1)"
+                      boxShadow="0 10px 25px rgba(0, 0, 0, 0.3)"
+                    >
+                      <Editor
+                        options={{
+                          minimap: {
+                            enabled: false,
+                          },
+                          fontSize: 14,
+                          lineNumbers: "on",
+                          automaticLayout: true,
+                          scrollBeyondLastLine: false,
+                          theme: "vs-dark",
+                          padding: { top: 16, bottom: 16 },
+                          fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+                          cursorBlinking: "smooth",
+                          smoothScrolling: true,
+                        }}
+                        height="75vh"
+                        theme="vs-dark"
+                        language="python"
+                        defaultValue={ROBOT_CODE_SNIPPETS[robot]}
+                        onMount={onMount}
+                        value={value}
+                        onChange={(value) => setValue(value)}
+                      />
+                    </Box>
+                  </MotionBox>
                 </VStack>
-              </Box>
+              </MotionBox>
               
-              <Box w="50%">
+              {/* Simulation Section */}
+              <MotionBox 
+                w="50%"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+              >
                 <VideoPlayer editorRef={editorRef} robot={robot} codeValue={value} />
-              </Box>
+              </MotionBox>
             </HStack>
           </CardBody>
-        </Card>
-      </VStack>
+        </MotionCard>
+      </MotionVStack>
     </Container>
   );
 };
