@@ -17,8 +17,19 @@ import {
   Input,
   FormControl,
   FormLabel,
+  Flex,
+  Spacer,
+  Icon,
 } from "@chakra-ui/react";
+import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+
+const MotionBox = motion(Box);
+const MotionCard = motion(Card);
+const MotionText = motion(Text);
+const MotionButton = motion(Button);
+const MotionVStack = motion(VStack);
+const MotionSimpleGrid = motion(SimpleGrid);
 
 // Dummy data for available time slots
 const generateTimeSlots = () => {
@@ -146,205 +157,232 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
 
   return (
     <Container maxW="7xl" py={8}>
-      <VStack spacing={8}>
+      <MotionVStack 
+        spacing={10}
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
         {/* Header */}
-        <HStack w="full" justify="space-between">
-          <VStack align="start" spacing={1}>
-            <Text fontSize="3xl" fontWeight="bold" color="white">
-              Book Your Robot Session
-            </Text>
-            <HStack>
-              <Avatar size="sm" name={user.name} />
-              <Text color="gray.300">Welcome, {user.name}</Text>
-            </HStack>
-          </VStack>
-          <Button variant="ghost" onClick={onLogout} color="gray.400">
-            Logout
-          </Button>
-        </HStack>
+        <MotionBox 
+          w="full"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+        >
+          <Flex align="center" justify="space-between" w="full">
+            <VStack align="start" spacing={3}>
+              <MotionText 
+                fontSize={{ base: "2xl", md: "4xl" }} 
+                fontWeight="bold" 
+                bgGradient="linear(to-r, brand.400, accent.400)"
+                bgClip="text"
+              >
+                Book Your Robot Session
+              </MotionText>
+              <HStack spacing={3}>
+                <Avatar 
+                  size="sm" 
+                  name={user.name}
+                  border="2px solid"
+                  borderColor="brand.400"
+                />
+                <VStack align="start" spacing={0}>
+                  <Text color="white" fontWeight="600">Welcome back, {user.name}</Text>
+                  <Text color="gray.400" fontSize="sm">{user.email}</Text>
+                </VStack>
+              </HStack>
+            </VStack>
+            <MotionButton
+              variant="glass"
+              onClick={onLogout}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Logout
+            </MotionButton>
+          </Flex>
+        </MotionBox>
 
         {/* Filters */}
-        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
+        <MotionCard 
+          w="full" 
+          variant="glass"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.8 }}
+        >
           <CardHeader>
-            <Text fontSize="lg" fontWeight="bold" color="white">
-              Filter Available Sessions
-            </Text>
+            <Flex align="center" gap={3}>
+              <Box fontSize="xl">🔍</Box>
+              <Text fontSize="xl" fontWeight="bold" color="white">
+                Filter Available Sessions
+              </Text>
+            </Flex>
           </CardHeader>
           <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
               <FormControl>
-                <FormLabel color="gray.300">Date</FormLabel>
+                <FormLabel color="gray.300" fontWeight="600">Date</FormLabel>
                 <Select
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  variant="glass"
+                  size="lg"
                 >
-                  <option value="">All dates</option>
                   {getDateOptions().map(option => (
-                    <option key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value} style={{ backgroundColor: '#1e293b', color: 'white' }}>
                       {option.label}
                     </option>
                   ))}
                 </Select>
               </FormControl>
-
+              
               <FormControl>
-                <FormLabel color="gray.300">Robot Type</FormLabel>
+                <FormLabel color="gray.300" fontWeight="600">Robot Type</FormLabel>
                 <Select
                   value={selectedRobot}
                   onChange={(e) => setSelectedRobot(e.target.value)}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  variant="glass"
+                  size="lg"
                 >
-                  <option value="">All robots</option>
-                  <option value="turtlebot">🤖 TurtleBot3</option>
-                  <option value="arm">🦾 Robot Arm</option>
-                  <option value="hand">🤲 Robot Hand</option>
+                  <option value="" style={{ backgroundColor: '#1e293b', color: 'white' }}>All robots</option>
+                  <option value="turtlebot" style={{ backgroundColor: '#1e293b', color: 'white' }}>🤖 TurtleBot3</option>
+                  <option value="arm" style={{ backgroundColor: '#1e293b', color: 'white' }}>🦾 Robot Arm</option>
+                  <option value="hand" style={{ backgroundColor: '#1e293b', color: 'white' }}>🤲 Robot Hand</option>
                 </Select>
               </FormControl>
             </SimpleGrid>
           </CardBody>
-        </Card>
+        </MotionCard>
 
         {/* Available Slots */}
-        <VStack w="full" spacing={6}>
-          <HStack w="full" justify="space-between">
-            <Text fontSize="xl" fontWeight="bold" color="white">
-              Available Sessions ({availableSlots.length})
-            </Text>
-            <Badge colorScheme="green" px={3} py={1}>
-              {availableSlots.length} slots free
-            </Badge>
-          </HStack>
-
-          {availableSlots.length === 0 ? (
-            <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
-              <CardBody textAlign="center" py={12}>
-                <Text fontSize="xl" color="gray.400" mb={2}>
-                  No available slots found
-                </Text>
-                <Text color="gray.500">
-                  Try adjusting your filters or check back later
-                </Text>
-              </CardBody>
-            </Card>
-          ) : (
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
-              {availableSlots.map((slot) => (
-                <Card
-                  key={slot.id}
-                  bg="gray.800"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  _hover={{ borderColor: "green.400", transform: "translateY(-2px)" }}
-                  transition="all 0.2s"
-                >
-                  <CardBody>
-                    <VStack spacing={3} align="start">
-                      <HStack justify="space-between" w="full">
-                        <Badge colorScheme="green">Available</Badge>
-                        <HStack>
-                          <Text fontSize="xl">{robotNames[slot.robotType].emoji}</Text>
-                          <Text fontSize="sm" color="gray.300">
-                            {robotNames[slot.robotType].name}
-                          </Text>
-                        </HStack>
-                      </HStack>
-                      
-                      <VStack align="start" spacing={1}>
-                        <Text color="white" fontWeight="bold">
-                          {new Date(slot.date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </Text>
-                        <Text color="gray.300" fontSize="lg">
-                          {slot.startTime} - {slot.endTime}
-                        </Text>
-                      </VStack>
-
-                      <Button
-                        colorScheme="green"
-                        w="full"
-                        onClick={() => handleBookSlot(slot)}
-                        isLoading={isLoading}
-                        loadingText="Booking..."
-                      >
-                        Book This Session
-                      </Button>
-                    </VStack>
-                  </CardBody>
-                </Card>
-              ))}
-            </SimpleGrid>
-          )}
-        </VStack>
-
-        {/* Booked Slots (for reference) */}
-        {bookedSlots.length > 0 && (
-          <VStack w="full" spacing={6}>
-            <Divider borderColor="gray.600" />
-            
-            <HStack w="full" justify="space-between">
-              <Text fontSize="xl" fontWeight="bold" color="white">
-                Unavailable Sessions
-              </Text>
-              <Badge colorScheme="red" px={3} py={1}>
-                {bookedSlots.length} slots taken
+        <MotionBox 
+          w="full"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.8 }}
+        >
+          <VStack w="full" spacing={8}>
+            <Flex w="full" justify="space-between" align="center">
+              <MotionText 
+                fontSize={{ base: "xl", md: "2xl" }} 
+                fontWeight="bold" 
+                color="white"
+              >
+                Available Sessions ({availableSlots.length})
+              </MotionText>
+              <Badge 
+                variant="gradient" 
+                px={4} 
+                py={2}
+                fontSize="md"
+                borderRadius="full"
+              >
+                {availableSlots.length} slots free
               </Badge>
-            </HStack>
+            </Flex>
 
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
-              {bookedSlots.slice(0, 6).map((slot) => (
-                <Card
-                  key={slot.id}
-                  bg="gray.900"
-                  border="1px solid"
-                  borderColor="gray.700"
-                  opacity={0.7}
-                >
-                  <CardBody>
-                    <VStack spacing={3} align="start">
-                      <HStack justify="space-between" w="full">
-                        <Badge colorScheme="red">Taken</Badge>
-                        <HStack>
-                          <Text fontSize="xl">{robotNames[slot.robotType].emoji}</Text>
-                          <Text fontSize="sm" color="gray.400">
-                            {robotNames[slot.robotType].name}
+            {availableSlots.length === 0 ? (
+              <MotionCard 
+                w="full" 
+                variant="glass"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <CardBody textAlign="center" py={16}>
+                  <VStack spacing={4}>
+                    <Text fontSize="6xl" opacity="0.5">😔</Text>
+                    <Text fontSize="xl" color="gray.400" fontWeight="600">
+                      No available slots found
+                    </Text>
+                    <Text color="gray.500">
+                      Try adjusting your filters or check back later
+                    </Text>
+                  </VStack>
+                </CardBody>
+              </MotionCard>
+            ) : (
+              <MotionSimpleGrid 
+                columns={{ base: 1, md: 2, lg: 3 }} 
+                spacing={6} 
+                w="full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8, duration: 0.8 }}
+              >
+                {availableSlots.map((slot, index) => (
+                  <MotionCard
+                    key={slot.id}
+                    variant="glass"
+                    cursor="pointer"
+                    whileHover={{ 
+                      y: -8, 
+                      scale: 1.02,
+                      boxShadow: "0 20px 40px rgba(56, 189, 248, 0.2)"
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 300,
+                      delay: index * 0.1 
+                    }}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => handleBookSlot(slot)}
+                  >
+                    <CardBody p={6}>
+                      <VStack spacing={4} align="start">
+                        <Flex justify="space-between" w="full" align="center">
+                          <Badge variant="glass" colorScheme="green" px={3} py={1}>
+                            ✅ Available
+                          </Badge>
+                          <HStack>
+                            <Text fontSize="xl" filter="drop-shadow(0 0 5px rgba(56, 189, 248, 0.3))">
+                              {robotNames[slot.robotType].emoji}
+                            </Text>
+                            <Text fontSize="sm" color="gray.300" fontWeight="600">
+                              {robotNames[slot.robotType].name}
+                            </Text>
+                          </HStack>
+                        </Flex>
+                        
+                        <VStack align="start" spacing={2} w="full">
+                          <Text color="white" fontWeight="bold" fontSize="lg">
+                            {new Date(slot.date).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
                           </Text>
-                        </HStack>
-                      </HStack>
-                      
-                      <VStack align="start" spacing={1}>
-                        <Text color="gray.300">
-                          {new Date(slot.date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </Text>
-                        <Text color="gray.400">
-                          {slot.startTime} - {slot.endTime}
-                        </Text>
-                      </VStack>
+                          <HStack>
+                            <Box color="brand.400">🕐</Box>
+                            <Text color="gray.300" fontSize="lg" fontWeight="600">
+                              {slot.startTime} - {slot.endTime}
+                            </Text>
+                          </HStack>
+                        </VStack>
 
-                      <Text fontSize="sm" color="gray.500">
-                        Booked by {slot.bookedBy}
-                      </Text>
-                    </VStack>
-                  </CardBody>
-                </Card>
-              ))}
-            </SimpleGrid>
+                        <MotionButton
+                          variant="gradient"
+                          w="full"
+                          size="lg"
+                          isLoading={isLoading}
+                          loadingText="Booking..."
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          🚀 Book This Session
+                        </MotionButton>
+                      </VStack>
+                    </CardBody>
+                  </MotionCard>
+                ))}
+              </MotionSimpleGrid>
+            )}
           </VStack>
-        )}
-      </VStack>
+        </MotionBox>
+      </MotionVStack>
     </Container>
   );
 };
