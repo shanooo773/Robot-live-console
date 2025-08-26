@@ -12,15 +12,19 @@ except ImportError:
     docker = None
     DOCKER_SDK_AVAILABLE = False
 import aiofiles
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import logging
 from pathlib import Path
 import time
+
+# Import our new modules
+from database import DatabaseManager
+from auth import auth_manager, get_current_user, require_admin
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -196,10 +200,14 @@ def create_docker_client():
 # Initialize Docker client
 docker_client = create_docker_client()
 
+# Initialize database
+db = DatabaseManager()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle application lifespan events"""
     logger.info("🚀 Robot Simulation API starting up...")
+    logger.info("📊 Database initialized")
     yield
     logger.info("🛑 Robot Simulation API shutting down...")
 
@@ -233,11 +241,173 @@ class CodeExecutionResponse(BaseModel):
     error: Optional[str] = None
     execution_id: Optional[str] = None
 
+# Authentication Models
+class UserRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict
+
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    role: str
+    created_at: str
+
+# Booking Models
+class BookingCreate(BaseModel):
+    robot_type: str
+    date: str
+    start_time: str
+    end_time: str
+
+class BookingResponse(BaseModel):
+    id: int
+    user_id: int
+    robot_type: str
+    date: str
+    start_time: str
+    end_time: str
+    status: str
+    created_at: str
+
+class BookingUpdate(BaseModel):
+    status: str
+
 # API Endpoints
 
 @app.get("/")
 async def root():
     return {"message": "Robot Programming Console API", "version": "1.0.0"}
+
+# Authentication Endpoints
+@app.post("/auth/register", response_model=TokenResponse)
+async def register(user_data: UserRegister):
+    """Register a new user"""
+    try:
+        user = db.create_user(user_data.name, user_data.email, user_data.password)
+        token = auth_manager.create_access_token(data={"sub": str(user["id"]), "email": user["email"], "role": user["role"]})
+        return TokenResponse(
+            access_token=token,
+            token_type="bearer",
+            user=user
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/auth/login", response_model=TokenResponse)
+async def login(user_data: UserLogin):
+    """Login user"""
+    user = db.authenticate_user(user_data.email, user_data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    token = auth_manager.create_access_token(data={"sub": str(user["id"]), "email": user["email"], "role": user["role"]})
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user=user
+    )
+
+@app.get("/auth/me", response_model=UserResponse)
+async def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    """Get current user information"""
+    user = db.get_user_by_id(int(current_user["sub"]))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserResponse(**user)
+
+# Booking Endpoints
+@app.post("/bookings", response_model=BookingResponse)
+async def create_booking(booking_data: BookingCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new booking"""
+    user_id = int(current_user["sub"])
+    
+    # Check for conflicting bookings
+    existing_bookings = db.get_bookings_for_date_range(booking_data.date, booking_data.date)
+    for existing in existing_bookings:
+        if (existing["robot_type"] == booking_data.robot_type and
+            existing["start_time"] == booking_data.start_time and
+            existing["end_time"] == booking_data.end_time):
+            raise HTTPException(status_code=400, detail="Time slot already booked")
+    
+    booking = db.create_booking(
+        user_id=user_id,
+        robot_type=booking_data.robot_type,
+        date=booking_data.date,
+        start_time=booking_data.start_time,
+        end_time=booking_data.end_time
+    )
+    return BookingResponse(**booking)
+
+@app.get("/bookings", response_model=List[BookingResponse])
+async def get_user_bookings(current_user: dict = Depends(get_current_user)):
+    """Get current user's bookings"""
+    user_id = int(current_user["sub"])
+    bookings = db.get_user_bookings(user_id)
+    return [BookingResponse(**booking) for booking in bookings]
+
+@app.get("/bookings/all", response_model=List[dict])
+async def get_all_bookings(current_user: dict = Depends(require_admin)):
+    """Get all bookings (admin only)"""
+    bookings = db.get_all_bookings()
+    return bookings
+
+@app.put("/bookings/{booking_id}", response_model=dict)
+async def update_booking(booking_id: int, booking_data: BookingUpdate, current_user: dict = Depends(require_admin)):
+    """Update booking status (admin only)"""
+    success = db.update_booking_status(booking_id, booking_data.status)
+    if not success:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return {"message": "Booking updated successfully"}
+
+@app.delete("/bookings/{booking_id}")
+async def delete_booking(booking_id: int, current_user: dict = Depends(require_admin)):
+    """Delete booking (admin only)"""
+    success = db.delete_booking(booking_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return {"message": "Booking deleted successfully"}
+
+@app.get("/bookings/schedule")
+async def get_booking_schedule(start_date: str, end_date: str):
+    """Get booking schedule for date range (public)"""
+    bookings = db.get_bookings_for_date_range(start_date, end_date)
+    return {"bookings": bookings}
+
+# Admin Endpoints
+@app.get("/admin/users", response_model=List[UserResponse])
+async def get_all_users(current_user: dict = Depends(require_admin)):
+    """Get all users (admin only)"""
+    users = db.get_all_users()
+    return [UserResponse(**user) for user in users]
+
+@app.get("/admin/stats")
+async def get_admin_stats(current_user: dict = Depends(require_admin)):
+    """Get admin dashboard statistics"""
+    users = db.get_all_users()
+    bookings = db.get_all_bookings()
+    
+    total_users = len(users)
+    total_bookings = len(bookings)
+    active_bookings = len([b for b in bookings if b["status"] == "active"])
+    
+    return {
+        "total_users": total_users,
+        "total_bookings": total_bookings,
+        "active_bookings": active_bookings,
+        "recent_users": users[:5],  # 5 most recent users
+        "recent_bookings": bookings[:10]  # 10 most recent bookings
+    }
 
 @app.get("/robots")
 def get_available_robots():
