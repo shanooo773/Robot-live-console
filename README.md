@@ -493,12 +493,30 @@ ssh -L 8080:localhost:8080 user@your-vps-ip
 
 ## 🐛 Troubleshooting VNC/NoVNC
 
+### Quick Fix Tools
+
+For VNC/NoVNC issues, use these automated tools:
+
+```bash
+# Comprehensive diagnosis
+./debug-vnc.sh check
+
+# Apply fixes to existing container  
+./apply-vnc-fixes.sh apply
+
+# Test VNC functionality
+./test-vnc.sh all
+```
+
 ### Common Issues
 
 1. **NoVNC shows black screen**
    ```bash
    # Check if VNC server is running
    docker-compose exec gazebo ps aux | grep vnc
+   
+   # Apply automatic fixes
+   ./apply-vnc-fixes.sh apply
    
    # Restart the container
    docker-compose restart gazebo
@@ -511,6 +529,9 @@ ssh -L 8080:localhost:8080 user@your-vps-ip
    
    # Check container logs
    docker-compose logs gazebo
+   
+   # Run comprehensive diagnostics
+   ./debug-vnc.sh check
    ```
 
 3. **Gazebo fails to start**
@@ -520,6 +541,9 @@ ssh -L 8080:localhost:8080 user@your-vps-ip
    
    # Check GPU/3D acceleration
    docker-compose exec gazebo glxinfo | grep rendering
+   
+   # Apply VNC fixes (includes Gazebo startup fixes)
+   ./apply-vnc-fixes.sh apply
    ```
 
 4. **Custom world not loading**
@@ -530,6 +554,12 @@ ssh -L 8080:localhost:8080 user@your-vps-ip
    # Check mount inside container
    docker-compose exec gazebo ls -la /opt/simulation/custom_worlds/
    ```
+
+### Detailed Troubleshooting
+
+For comprehensive troubleshooting guides, see:
+- [`VNC_TROUBLESHOOTING.md`](VNC_TROUBLESHOOTING.md) - Detailed issue analysis and solutions
+- [`SETUP_GUIDE.md`](SETUP_GUIDE.md) - Complete setup instructions with multiple approaches
 
 ### Performance Optimization
 
