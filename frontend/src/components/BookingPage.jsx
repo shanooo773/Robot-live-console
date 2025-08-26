@@ -64,9 +64,9 @@ const generateTimeSlots = () => {
 };
 
 const robotNames = {
-  turtlebot: { name: "TurtleBot3", emoji: "🤖" },
-  arm: { name: "Robot Arm", emoji: "🦾" },
-  hand: { name: "Robot Hand", emoji: "🤲" },
+  turtlebot: { name: "TurtleBot3 Navigation", emoji: "🤖" },
+  arm: { name: "Robot Arm Manipulation", emoji: "🦾" },
+  hand: { name: "Dexterous Hand Control", emoji: "🤲" },
 };
 
 const BookingPage = ({ user, onBooking, onLogout }) => {
@@ -116,8 +116,8 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
       onBooking(bookedSlot);
       
       toast({
-        title: "Booking confirmed!",
-        description: `Your session is booked for ${slot.date} at ${slot.startTime}`,
+        title: "Development session booked!",
+        description: `Your coding console is reserved for ${slot.date} at ${slot.startTime}`,
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -151,7 +151,7 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
         <HStack w="full" justify="space-between">
           <VStack align="start" spacing={1}>
             <Text fontSize="3xl" fontWeight="bold" color="white">
-              Book Your Robot Session
+              Book Development Console Session
             </Text>
             <HStack>
               <Avatar size="sm" name={user.name} />
@@ -167,7 +167,7 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
         <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
           <CardHeader>
             <Text fontSize="lg" fontWeight="bold" color="white">
-              Filter Available Sessions
+              Choose Development Environment
             </Text>
           </CardHeader>
           <CardBody>
@@ -192,7 +192,7 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
               </FormControl>
 
               <FormControl>
-                <FormLabel color="gray.300">Robot Type</FormLabel>
+                <FormLabel color="gray.300">Development Environment</FormLabel>
                 <Select
                   value={selectedRobot}
                   onChange={(e) => setSelectedRobot(e.target.value)}
@@ -201,10 +201,10 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
                   borderColor="gray.600"
                   color="white"
                 >
-                  <option value="">All robots</option>
-                  <option value="turtlebot">🤖 TurtleBot3</option>
-                  <option value="arm">🦾 Robot Arm</option>
-                  <option value="hand">🤲 Robot Hand</option>
+                  <option value="">All environments</option>
+                  <option value="turtlebot">🤖 TurtleBot3 Navigation</option>
+                  <option value="arm">🦾 Robot Arm Manipulation</option>
+                  <option value="hand">🤲 Dexterous Hand Control</option>
                 </Select>
               </FormControl>
             </SimpleGrid>
@@ -215,10 +215,10 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
         <VStack w="full" spacing={6}>
           <HStack w="full" justify="space-between">
             <Text fontSize="xl" fontWeight="bold" color="white">
-              Available Sessions ({availableSlots.length})
+              Available Development Sessions ({availableSlots.length})
             </Text>
             <Badge colorScheme="green" px={3} py={1}>
-              {availableSlots.length} slots free
+              {availableSlots.length} console slots free
             </Badge>
           </HStack>
 
@@ -226,7 +226,7 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
             <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
               <CardBody textAlign="center" py={12}>
                 <Text fontSize="xl" color="gray.400" mb={2}>
-                  No available slots found
+                  No development sessions available
                 </Text>
                 <Text color="gray.500">
                   Try adjusting your filters or check back later
@@ -276,7 +276,7 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
                         isLoading={isLoading}
                         loadingText="Booking..."
                       >
-                        Book This Session
+                        Access Development Console
                       </Button>
                     </VStack>
                   </CardBody>

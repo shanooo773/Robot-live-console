@@ -246,16 +246,16 @@ def get_available_robots():
         "robots": ["turtlebot", "arm", "hand"],
         "details": {
             "turtlebot": {
-                "name": "TurtleBot3",
-                "description": "Mobile robot for navigation and path planning"
+                "name": "TurtleBot3 Navigation Environment",
+                "description": "Development environment for mobile robot navigation and path planning algorithms"
             },
             "arm": {
-                "name": "Robot Arm", 
-                "description": "6-DOF manipulator for pick and place operations"
+                "name": "Robot Arm Manipulation Environment", 
+                "description": "Development environment for 6-DOF manipulator control and pick & place operations"
             },
             "hand": {
-                "name": "Robot Hand",
-                "description": "Dexterous gripper for complex manipulation tasks"
+                "name": "Dexterous Hand Control Environment",
+                "description": "Development environment for dexterous gripper control and complex manipulation tasks"
             }
         }
     }
