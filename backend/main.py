@@ -235,6 +235,114 @@ class CodeExecutionResponse(BaseModel):
 
 # API Endpoints
 
+@app.get("/status")
+async def status_check():
+    """Health check endpoint"""
+    return {"status": "Backend is running", "timestamp": time.time()}
+
+@app.get("/videos-debug")
+async def videos_debug():
+    """Debug endpoint for video directory and permissions"""
+    try:
+        videos_dir = Path("videos")
+        return {
+            "videos_directory_exists": videos_dir.exists(),
+            "videos_directory_writable": videos_dir.is_dir() and os.access(videos_dir, os.W_OK),
+            "videos_count": len(list(videos_dir.glob("*.mp4"))) if videos_dir.exists() else 0,
+            "videos_list": [f.name for f in videos_dir.glob("*.mp4")] if videos_dir.exists() else [],
+            "current_working_directory": str(Path.cwd()),
+            "videos_absolute_path": str(videos_dir.absolute())
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/docker-status")
+async def docker_status():
+    """Check Docker availability and configuration"""
+    try:
+        status = {
+            "docker_sdk_available": DOCKER_SDK_AVAILABLE,
+            "docker_client_connected": False,
+            "docker_ping_successful": False,
+            "docker_images": [],
+            "docker_client_type": "none"
+        }
+        
+        if docker_client:
+            status["docker_client_connected"] = True
+            status["docker_client_type"] = "cli" if getattr(docker_client, 'use_cli', False) else "sdk"
+            
+            try:
+                status["docker_ping_successful"] = docker_client.ping()
+                
+                # Try to list images
+                if hasattr(docker_client, 'client') and docker_client.client:
+                    try:
+                        images = docker_client.client.images.list()
+                        status["docker_images"] = [{"id": img.id[:12], "tags": img.tags} for img in images]
+                    except:
+                        pass
+                else:
+                    # CLI fallback
+                    import subprocess
+                    try:
+                        result = subprocess.run(['docker', 'images', '--format', 'table {{.Repository}}:{{.Tag}}\t{{.ID}}'], 
+                                              capture_output=True, text=True, timeout=10)
+                        if result.returncode == 0:
+                            lines = result.stdout.strip().split('\n')[1:]  # Skip header
+                            status["docker_images"] = [line.strip() for line in lines if line.strip()]
+                    except Exception as e:
+                        status["docker_cli_error"] = str(e)
+                        
+                # Check for robot simulation image specifically
+                status["robot_simulation_image_available"] = any(
+                    "robot-simulation" in str(img) for img in status["docker_images"]
+                )
+                
+            except Exception as e:
+                status["docker_error"] = str(e)
+        
+        return status
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/videos-check/{execution_id}")
+async def check_video_file(execution_id: str):
+    """Check if a specific video file exists and is accessible"""
+    try:
+        video_path = VIDEOS_DIR / f"{execution_id}.mp4"
+        return {
+            "execution_id": execution_id,
+            "file_exists": video_path.exists(),
+            "file_size": video_path.stat().st_size if video_path.exists() else 0,
+            "file_path": str(video_path),
+            "file_readable": video_path.is_file() and os.access(video_path, os.R_OK) if video_path.exists() else False,
+            "video_url": f"/videos/{execution_id}.mp4" if video_path.exists() else None
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/debug-info")
+async def debug_info():
+    """Comprehensive debug information"""
+    try:
+        return {
+            "backend": {
+                "working_directory": str(Path.cwd()),
+                "videos_directory": str(VIDEOS_DIR.absolute()),
+                "videos_exists": VIDEOS_DIR.exists(),
+                "environment": {
+                    "python_version": platform.python_version(),
+                    "platform": platform.platform(),
+                    "architecture": platform.architecture()
+                }
+            },
+            "docker": await docker_status(),
+            "videos": await videos_debug()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/")
 async def root():
     return {"message": "Robot Programming Console API", "version": "1.0.0"}
@@ -290,6 +398,33 @@ async def execute_robot_code(request: CodeExecutionRequest):
             container_name = f"robot-sim-{execution_id}"
             
             try:
+                # Check if image exists first
+                logger.info(f"Checking for Docker image: robot-simulation:latest")
+                image_available = False
+                
+                try:
+                    if hasattr(docker_client, 'client') and docker_client.client:
+                        # SDK method
+                        docker_client.client.images.get("robot-simulation:latest")
+                        image_available = True
+                        logger.info("Docker image found via SDK")
+                    else:
+                        # CLI fallback
+                        import subprocess
+                        result = subprocess.run(['docker', 'images', 'robot-simulation:latest', '-q'], 
+                                              capture_output=True, text=True, timeout=10)
+                        if result.returncode == 0 and result.stdout.strip():
+                            image_available = True
+                            logger.info("Docker image found via CLI")
+                        else:
+                            logger.warning("Docker image robot-simulation:latest not found")
+                except Exception as e:
+                    logger.error(f"Error checking for Docker image: {e}")
+                
+                if not image_available:
+                    logger.warning("Docker image robot-simulation:latest not available, falling back to mock simulation")
+                    raise Exception("Docker image robot-simulation:latest not found")
+                
                 # Mount volumes and set environment
                 volumes = [
                     f"{temp_dir.absolute()}:/workspace",
@@ -301,6 +436,8 @@ async def execute_robot_code(request: CodeExecutionRequest):
                     f"EXECUTION_ID={execution_id}",
                     "DISPLAY=:99"
                 ]
+                
+                logger.info(f"Starting Docker container {container_name} with image robot-simulation:latest")
                 
                 # Run container
                 container = docker_client.containers().run(
@@ -314,24 +451,36 @@ async def execute_robot_code(request: CodeExecutionRequest):
                     working_dir="/workspace"
                 )
                 
+                logger.info(f"Container {container_name} started, waiting for completion...")
+                
                 # Wait for completion (with timeout)
                 result = container.wait(timeout=120)
                 
+                logger.info(f"Container completed with status code: {result['StatusCode']}")
+                
                 if result['StatusCode'] == 0 and video_path.exists():
-                    return CodeExecutionResponse(
-                        success=True,
-                        video_url=f"/videos/{video_filename}",
-                        execution_id=execution_id
-                    )
-                else:
-                    # Get logs for debugging
-                    logs = container.logs()
-                    logger.error(f"Simulation failed for {execution_id}: {logs}")
-                    return CodeExecutionResponse(
-                        success=False,
-                        error="Simulation failed to complete successfully",
-                        execution_id=execution_id
-                    )
+                    # Check if video file has content
+                    video_size = video_path.stat().st_size
+                    logger.info(f"Real simulation completed successfully, video size: {video_size} bytes")
+                    
+                    if video_size > 100:  # Ensure it's not just a placeholder
+                        return CodeExecutionResponse(
+                            success=True,
+                            video_url=f"/videos/{video_filename}",
+                            execution_id=execution_id
+                        )
+                    else:
+                        logger.warning(f"Video file too small ({video_size} bytes), treating as failed")
+                
+                # Get logs for debugging
+                logs = container.logs()
+                logger.error(f"Simulation failed for {execution_id}. Container logs: {logs}")
+                
+                return CodeExecutionResponse(
+                    success=False,
+                    error=f"Simulation failed to complete successfully. Container exit code: {result['StatusCode']}",
+                    execution_id=execution_id
+                )
                     
             except Exception as e:
                 logger.error(f"Docker execution failed: {e}")
