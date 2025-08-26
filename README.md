@@ -15,10 +15,11 @@ An interactive web-based platform for writing Python code to control robots in a
 
 ### Prerequisites
 
-- Docker (with ability to run Linux containers)
-- Node.js (v16 or higher)
-- Python 3.8+
-- 4GB+ RAM (for ROS/Gazebo simulation)
+- **Docker** (with ability to run Linux containers) - v20.10+
+- **Node.js** (v18 or higher) 
+- **Python** 3.8+
+- **4GB+ RAM** (for ROS/Gazebo simulation)
+- **2GB+ free disk space** (for Docker images)
 
 ### Installation
 
@@ -28,21 +29,28 @@ An interactive web-based platform for writing Python code to control robots in a
    cd Robot-live-console
    ```
 
-2. **Run the setup script**:
+2. **Validate your environment** (optional but recommended):
    ```bash
-   ./setup.sh
+   ./setup.sh validate
    ```
 
-   This single command will:
-   - Check system requirements
-   - Build the Docker image (10-15 minutes first time)
-   - Set up the FastAPI backend
-   - Set up the React frontend
-   - Start both servers
+3. **Run the setup script**:
+   ```bash
+   ./setup.sh start
+   ```
 
-3. **Access the application**:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
+   This command will:
+   - ✅ Check system requirements
+   - ✅ Validate environment and available resources
+   - ✅ Build the Docker image (10-15 minutes first time)
+   - ✅ Set up Python virtual environment for backend
+   - ✅ Install and secure frontend dependencies
+   - ✅ Start both servers
+
+4. **Access the application**:
+   - **Frontend**: http://localhost:5173 (Vite dev server)
+   - **Backend API**: http://localhost:8000
+   - **API Documentation**: http://localhost:8000/docs
 
 ## 🏗️ Architecture
 
@@ -224,24 +232,49 @@ The simulation runs in a secure Docker container with:
 
 ## 🛠️ Management Commands
 
+### Basic Commands
 ```bash
-# Start everything
+# Start everything (recommended for first-time setup)
 ./setup.sh start
 
-# Stop servers
+# Stop running servers
 ./setup.sh stop
 
-# Check status
+# Check status of all services
 ./setup.sh status
 
-# Setup dependencies only
+# Show system information
+./setup.sh info
+```
+
+### Setup Commands
+```bash
+# Setup dependencies only (without starting)
 ./setup.sh setup
 
 # Build Docker image only
 ./setup.sh build
 
-# Show help
+# Validate environment requirements
+./setup.sh validate
+```
+
+### Maintenance Commands
+```bash
+# Clean up temporary files and old videos
+./setup.sh cleanup
+
+# Show all available commands
 ./setup.sh help
+```
+
+### Environment Variables
+```bash
+# Skip Docker operations (for development)
+SKIP_DOCKER=1 ./setup.sh start
+
+# Override default ports
+FRONTEND_PORT=3000 BACKEND_PORT=8080 ./setup.sh start
 ```
 
 ## 🔒 Security Features
@@ -503,6 +536,140 @@ ssh -L 8080:localhost:8080 user@your-vps-ip
 - **Increase container memory**: Add `mem_limit: 4g` to docker-compose.yml
 - **Enable GPU acceleration**: Add GPU support for better performance
 - **Reduce display quality**: Lower VNC color depth for faster connection
+
+## 🐛 Troubleshooting
+
+### Common Setup Issues
+
+#### ❌ Docker Build Fails
+```bash
+# Check Docker daemon status
+docker info
+
+# Clean up Docker resources
+./setup.sh cleanup
+docker system prune -a
+
+# Try building with more memory
+export DOCKER_BUILDKIT=1
+./setup.sh build
+```
+
+#### ❌ Port Already in Use
+```bash
+# Check what's using the ports
+./setup.sh status
+
+# Kill processes using the ports
+sudo lsof -ti:8000,5173 | xargs kill -9
+
+# Or use different ports
+FRONTEND_PORT=3000 BACKEND_PORT=8080 ./setup.sh start
+```
+
+#### ❌ NPM Security Vulnerabilities
+```bash
+# The setup script now automatically fixes these
+./setup.sh setup
+
+# Or manually fix
+cd frontend && npm audit fix
+```
+
+#### ❌ Python Virtual Environment Issues
+```bash
+# Remove and recreate the environment
+rm -rf backend/venv
+./setup.sh setup
+```
+
+### Performance Issues
+
+#### 🐌 Slow Simulation
+- **Check available resources**: `./setup.sh info`
+- **Increase Docker memory**: Edit `.env` file, set `DOCKER_MEMORY_LIMIT=4g`
+- **Close other applications** to free up RAM
+- **Use SSD storage** for better I/O performance
+
+#### 🐌 Slow Frontend Loading
+```bash
+# Clear npm cache
+cd frontend && npm cache clean --force
+
+# Update dependencies
+npm update
+
+# Use production build for faster loading
+npm run build && npm run preview
+```
+
+### Development Issues
+
+#### 🔧 Hot Reload Not Working
+```bash
+# Ensure Vite is configured properly
+cd frontend && cat vite.config.js
+
+# Check if files are being watched
+./setup.sh status
+```
+
+#### 🔧 Backend API Not Responding
+```bash
+# Check backend logs
+cat backend/backend.log
+
+# Restart backend only
+./setup.sh stop
+cd backend && source venv/bin/activate && python main.py
+```
+
+### Docker Issues
+
+#### 🐳 Docker Image Issues
+```bash
+# Force rebuild without cache
+docker build --no-cache -t robot-simulation:latest docker/
+
+# Check image exists
+docker images | grep robot-simulation
+
+# Test container manually
+docker run -it robot-simulation:latest /bin/bash
+```
+
+#### 🐳 Container Permission Issues
+```bash
+# On Linux, add user to docker group
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Check Docker permissions
+docker run hello-world
+```
+
+### Environment Validation
+
+```bash
+# Run comprehensive environment check
+./setup.sh validate
+
+# Check system resources
+./setup.sh info
+
+# Verify all dependencies
+./setup.sh validate && echo "✅ Environment OK"
+```
+
+### Getting Help
+
+If you're still experiencing issues:
+
+1. **Check the logs**: `backend/backend.log` and `frontend/frontend.log`
+2. **Run validation**: `./setup.sh validate`
+3. **Clean up and retry**: `./setup.sh cleanup && ./setup.sh start`
+4. **Check system requirements**: Ensure you have enough RAM and disk space
+5. **Create an issue**: Include output from `./setup.sh info` and relevant logs
 
 ## 📄 License
 

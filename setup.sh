@@ -291,6 +291,26 @@ setup_frontend() {
     print_status "Installing npm dependencies..."
     npm install
     
+    # Fix security vulnerabilities
+    print_status "Checking and fixing npm security vulnerabilities..."
+    if npm audit --audit-level moderate --silent; then
+        print_success "No security vulnerabilities found"
+    else
+        print_warning "Found npm security vulnerabilities, attempting to fix..."
+        npm audit fix || print_warning "Some vulnerabilities may require manual intervention"
+        
+        # Check remaining vulnerabilities - only warn for breaking changes
+        if ! npm audit --audit-level critical --silent; then
+            print_error "Critical vulnerabilities found! Manual intervention required."
+        elif ! npm audit --audit-level high --silent; then
+            print_warning "High severity vulnerabilities remain. Consider updating manually."
+        else
+            # Only moderate vulnerabilities remain
+            print_warning "Some moderate vulnerabilities remain (may require breaking changes)."
+            print_status "To fix all issues: cd frontend && npm audit fix --force"
+        fi
+    fi
+    
     cd ..
     print_success "Frontend setup complete!"
 }
@@ -400,7 +420,95 @@ stop_servers() {
     fi
 }
 
-# Function to show usage
+# Function to cleanup temporary files and processes
+cleanup() {
+    print_status "Performing cleanup..."
+    
+    # Clean up temporary files
+    if [ -f docker_build.log ]; then
+        print_status "Cleaning up build logs..."
+        rm -f docker_build.log
+    fi
+    
+    # Clean up backend temporary files
+    if [ -d backend/temp ]; then
+        print_status "Cleaning up backend temporary files..."
+        rm -rf backend/temp/*
+    fi
+    
+    # Clean up old video files (older than 7 days)
+    if [ -d backend/videos ]; then
+        print_status "Cleaning up old video files..."
+        find backend/videos -name "*.mp4" -mtime +7 -delete 2>/dev/null || true
+    fi
+    
+    # Clean up Docker volumes and dangling images
+    if command_exists docker && docker info >/dev/null 2>&1; then
+        print_status "Cleaning up Docker resources..."
+        docker system prune -f >/dev/null 2>&1 || true
+    fi
+    
+    print_success "Cleanup completed!"
+}
+
+# Function to show system information
+show_system_info() {
+    print_status "System Information:"
+    echo "  OS: $(uname -s) $(uname -r)"
+    echo "  Architecture: $(uname -m)"
+    
+    if command_exists docker; then
+        echo "  Docker: $(docker --version 2>/dev/null || echo 'Not running')"
+    fi
+    
+    if command_exists node; then
+        echo "  Node.js: $(node --version)"
+    fi
+    
+    if command_exists python3; then
+        echo "  Python: $(python3 --version)"
+    fi
+    
+    echo "  Available Memory: $(free -h 2>/dev/null | awk '/^Mem:/ {print $7}' || echo 'Unknown')"
+    echo "  Available Disk: $(df -h . 2>/dev/null | awk 'NR==2 {print $4}' || echo 'Unknown')"
+}
+
+# Function to validate environment
+validate_environment() {
+    print_status "Validating environment..."
+    
+    local errors=0
+    
+    # Check available disk space (need at least 2GB)
+    local available_space=$(df . 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
+    if [ "$available_space" -lt 2097152 ]; then  # 2GB in KB
+        print_error "Insufficient disk space. Need at least 2GB free."
+        errors=$((errors + 1))
+    fi
+    
+    # Check available memory (recommend at least 2GB)
+    local available_memory=$(free 2>/dev/null | awk '/^Mem:/ {print $7}' || echo "0")
+    if [ "$available_memory" -lt 2097152 ]; then  # 2GB in KB
+        print_warning "Low available memory. Recommend at least 2GB for optimal performance."
+    fi
+    
+    # Check if ports are already in use
+    if is_port_open "$BACKEND_PORT"; then
+        print_warning "Port $BACKEND_PORT is already in use"
+    fi
+    
+    if is_port_open "$FRONTEND_PORT"; then
+        print_warning "Port $FRONTEND_PORT is already in use"
+    fi
+    
+    if [ $errors -gt 0 ]; then
+        print_error "Environment validation failed with $errors errors"
+        return 1
+    fi
+    
+    print_success "Environment validation passed!"
+    return 0
+}
 show_usage() {
     echo "Usage: $0 [COMMAND]"
     echo ""
@@ -410,7 +518,15 @@ show_usage() {
     echo "  build    - Build Docker image only"
     echo "  setup    - Setup dependencies only"
     echo "  status   - Show status of running servers"
+    echo "  cleanup  - Clean up temporary files and old videos"
+    echo "  info     - Show system information"
+    echo "  validate - Validate environment requirements"
     echo "  help     - Show this help message"
+    echo ""
+    echo "Environment Variables:"
+    echo "  SKIP_DOCKER=1     - Skip Docker operations"
+    echo "  FRONTEND_PORT     - Override frontend port (default: from .env)"
+    echo "  BACKEND_PORT      - Override backend port (default: from .env)"
 }
 
 # Function to show status
@@ -447,19 +563,25 @@ main() {
         "start")
             check_requirements
             load_env
-            build_docker_image
-            setup_backend
-            setup_frontend
-            start_backend
-            start_frontend
-            echo ""
-            print_success "🎉 Robot Live Console is ready!"
-            echo ""
-            echo "  Frontend: http://localhost:${FRONTEND_PORT}"
-            echo "  Backend:  http://localhost:${BACKEND_PORT}"
-            echo ""
-            print_status "Use '$0 stop' to stop the servers"
-            print_status "Check logs: backend/backend.log and frontend/frontend.log"
+            if validate_environment; then
+                build_docker_image
+                setup_backend
+                setup_frontend
+                start_backend
+                start_frontend
+                echo ""
+                print_success "🎉 Robot Live Console is ready!"
+                echo ""
+                echo "  Frontend: http://localhost:${FRONTEND_PORT}"
+                echo "  Backend:  http://localhost:${BACKEND_PORT}"
+                echo ""
+                print_status "Use '$0 stop' to stop the servers"
+                print_status "Check logs: backend/backend.log and frontend/frontend.log"
+                print_status "Use '$0 cleanup' to clean up temporary files"
+            else
+                print_error "Environment validation failed. Please fix the issues and try again."
+                exit 1
+            fi
             ;;
         "stop")
             stop_servers
@@ -478,6 +600,16 @@ main() {
         "status")
             load_env
             show_status
+            ;;
+        "cleanup")
+            cleanup
+            ;;
+        "info")
+            show_system_info
+            ;;
+        "validate")
+            load_env
+            validate_environment
             ;;
         "help"|"--help"|"-h")
             show_usage
