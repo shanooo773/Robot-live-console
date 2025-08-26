@@ -5,16 +5,10 @@ import {
   Text,
   Button,
   Container,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
   SimpleGrid,
   Card,
   CardBody,
+  CardHeader,
   Image,
   Badge,
   Stat,
@@ -27,915 +21,1578 @@ import {
   AccordionPanel,
   AccordionIcon,
   Icon,
+  Input,
+  Textarea,
+  FormControl,
+  FormLabel,
+  Flex,
+  Avatar,
+  Divider,
+  Link,
 } from "@chakra-ui/react";
-import { useState } from "react";
-import { FaRocket, FaCode, FaVideo, FaUsers, FaClock, FaCheck } from "react-icons/fa";
-
-const robotTypes = [
-  {
-    id: "turtlebot",
-    name: "TurtleBot3",
-    description: "Advanced mobile robot platform designed for autonomous navigation, mapping, and path planning in dynamic environments",
-    image: "🤖",
-    features: ["Autonomous Navigation", "SLAM Mapping", "Obstacle Avoidance", "Path Planning", "Real-time Localization"]
-  },
-  {
-    id: "arm",
-    name: "Robot Arm",
-    description: "Precision 6-DOF manipulator capable of complex pick-and-place operations, trajectory planning, and fine motor control",
-    image: "🦾",
-    features: ["6 Degrees of Freedom", "Precise Positioning", "Object Manipulation", "Trajectory Planning", "Force Control"]
-  },
-  {
-    id: "hand",
-    name: "Robot Hand",
-    description: "Sophisticated dexterous gripper system for complex manipulation tasks requiring adaptive grasping and fine motor skills",
-    image: "🤲",
-    features: ["Multi-finger Grasping", "Force Feedback", "Adaptive Grip", "Tactile Sensing", "Precision Control"]
-  }
-];
+import { 
+  FaRobot, 
+  FaBrain, 
+  FaGraduationCap, 
+  FaChartLine, 
+  FaCogs, 
+  FaLightbulb,
+  FaShieldAlt,
+  FaRocket,
+  FaPhone,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaFacebook,
+  FaTwitter,
+  FaLinkedin,
+  FaGithub,
+  FaStar,
+  FaArrowRight,
+  FaPlay,
+  FaQuoteLeft,
+  FaUsers,
+  FaAward,
+  FaGlobe,
+  FaHandshake
+} from "react-icons/fa";
 
 const LandingPage = ({ onGetStarted }) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [selectedRobot, setSelectedRobot] = useState(null);
-
-  const handleRobotClick = (robot) => {
-    setSelectedRobot(robot);
-    onOpen();
-  };
-
   return (
     <Box 
       minH="100vh"
-      bgGradient="linear(135deg, brand.900 0%, brand.800 25%, brand.700 50%, brand.600 75%, brand.500 100%)"
+      bg="white"
+      color="gray.800"
       position="relative"
       overflow="hidden"
     >
-      {/* Background overlay for depth */}
+      {/* Hero Section */}
       <Box
-        position="absolute"
-        top="0"
-        left="0"
-        right="0"
-        bottom="0"
-        bgGradient="radial(circle at 30% 20%, brand.600 0%, transparent 50%)"
-        opacity="0.3"
-        zIndex="0"
-      />
-      
-      <Container maxW="7xl" py={20} position="relative" zIndex="1">
-        <VStack spacing={20} align="center">
-          {/* Enhanced Hero Section */}
-          <VStack spacing={8} textAlign="center" maxW="4xl">
-            <Box position="relative">
-              <Text fontSize="8xl" mb={6} 
-                filter="drop-shadow(0 0 20px rgba(26, 140, 255, 0.5))"
-                animation="pulse 2s infinite"
+        position="relative"
+        minH="100vh"
+        bgGradient="linear(135deg, blue.900 0%, blue.800 25%, blue.700 50%, blue.600 75%, blue.500 100%)"
+        overflow="hidden"
+      >
+        {/* Background Circuit Pattern */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          opacity="0.1"
+          backgroundImage="url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><path d=\"M10 10h20v20h-20zM40 10h20v20h-20zM70 10h20v20h-20zM10 40h20v20h-20zM40 40h20v20h-20zM70 40h20v20h-20zM10 70h20v20h-20zM40 70h20v20h-20zM70 70h20v20h-20z\" fill=\"none\" stroke=\"%23ffffff\" stroke-width=\"1\"/></svg>')"
+          backgroundSize="60px 60px"
+          zIndex="0"
+        />
+        
+        <Container maxW="7xl" position="relative" zIndex="1">
+          <VStack
+            minH="100vh"
+            justify="center"
+            align="center"
+            spacing={12}
+            py={20}
+          >
+            <HStack
+              spacing={20}
+              align="center"
+              w="full"
+              maxW="6xl"
+              flexDir={{ base: "column", lg: "row" }}
+            >
+              {/* Left Side - Text Content */}
+              <VStack
+                align={{ base: "center", lg: "start" }}
+                spacing={8}
+                flex="1"
+                textAlign={{ base: "center", lg: "left" }}
               >
-                🤖
-              </Text>
-              <Box
-                position="absolute"
-                top="50%"
-                left="50%"
-                transform="translate(-50%, -50%)"
-                w="200px"
-                h="200px"
-                bgGradient="radial(circle, brand.400 0%, transparent 70%)"
-                opacity="0.2"
-                borderRadius="full"
-                filter="blur(40px)"
-                zIndex="-1"
-              />
-            </Box>
-            
-            <VStack spacing={4}>
-              <Text 
-                fontSize={{ base: "4xl", md: "6xl", lg: "7xl" }} 
-                fontWeight="900" 
-                color="white"
-                bgGradient="linear(45deg, white, blue.200)"
-                bgClip="text"
-                textShadow="0 4px 20px rgba(255, 255, 255, 0.3)"
-                lineHeight="1.1"
-              >
-                Robot Programming
-              </Text>
-              <Text 
-                fontSize={{ base: "3xl", md: "5xl", lg: "6xl" }} 
-                fontWeight="900" 
-                color="blue.300"
-                textShadow="0 2px 10px rgba(26, 140, 255, 0.5)"
-              >
-                Console
-              </Text>
-            </VStack>
-            
-            <VStack spacing={6} maxW="3xl">
-              <Text fontSize={{ base: "xl", md: "2xl" }} color="blue.100" fontWeight="500" lineHeight="1.6">
-                Transform your robotics knowledge into real-world skills with our cutting-edge simulation platform.
-              </Text>
-              <Text fontSize={{ base: "lg", md: "xl" }} color="gray.300" lineHeight="1.7">
-                Book dedicated time slots to program authentic robot systems in high-fidelity simulations. 
-                Write Python code using ROS (Robot Operating System), control advanced robotic platforms, 
-                and witness your algorithms come to life through immersive real-time visualizations.
-              </Text>
-              <Text fontSize={{ base: "md", md: "lg" }} color="gray.400" lineHeight="1.6">
-                Whether you're mastering autonomous navigation with TurtleBot3, perfecting manipulation 
-                tasks with robotic arms, or exploring dexterous grasping with advanced hand systems - 
-                our platform provides the tools and environment for hands-on robotics learning.
-              </Text>
-            </VStack>
-            
-            <HStack spacing={6} pt={6}>
-              <Button
-                size="xl"
-                h="auto"
-                py={6}
-                px={12}
-                fontSize="xl"
-                fontWeight="bold"
-                bgGradient="linear(135deg, blue.400, blue.600)"
-                color="white"
-                boxShadow="0 8px 32px rgba(26, 140, 255, 0.4)"
-                _hover={{
-                  bgGradient: "linear(135deg, blue.300, blue.500)",
-                  boxShadow: "0 12px 48px rgba(26, 140, 255, 0.6)",
-                  transform: "translateY(-3px)",
-                }}
-                onClick={onGetStarted}
-                leftIcon={<FaRocket />}
-              >
-                Start Your Journey
-              </Button>
+                <VStack spacing={4} align={{ base: "center", lg: "start" }}>
+                  <Text
+                    fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
+                    fontWeight="900"
+                    color="white"
+                    lineHeight="1.1"
+                    textShadow="0 4px 20px rgba(0, 0, 0, 0.3)"
+                  >
+                    Bring Force of{" "}
+                    <Text as="span" color="cyan.300">
+                      Artificial Intelligence
+                    </Text>{" "}
+                    To Business
+                  </Text>
+                  
+                  <Text
+                    fontSize={{ base: "lg", md: "xl" }}
+                    color="blue.100"
+                    maxW="2xl"
+                    lineHeight="1.6"
+                  >
+                    Transform your business operations with cutting-edge AI and robotics solutions. 
+                    Enhance productivity, reduce costs, and stay ahead of the competition with our 
+                    intelligent automation platform.
+                  </Text>
+                </VStack>
+                
+                <HStack spacing={6} flexWrap="wrap" justify={{ base: "center", lg: "start" }}>
+                  <Button
+                    size="lg"
+                    px={8}
+                    py={6}
+                    fontSize="lg"
+                    fontWeight="bold"
+                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    color="white"
+                    boxShadow="0 8px 32px rgba(0, 255, 255, 0.3)"
+                    _hover={{
+                      bgGradient: "linear(135deg, cyan.300, blue.400)",
+                      boxShadow: "0 12px 48px rgba(0, 255, 255, 0.4)",
+                      transform: "translateY(-2px)",
+                    }}
+                    leftIcon={<FaArrowRight />}
+                  >
+                    Read More
+                  </Button>
+                  
+                  <Button
+                    size="lg"
+                    px={8}
+                    py={6}
+                    fontSize="lg"
+                    variant="outline"
+                    borderColor="cyan.300"
+                    color="white"
+                    _hover={{
+                      bg: "whiteAlpha.200",
+                      borderColor: "cyan.200",
+                      transform: "translateY(-2px)",
+                    }}
+                    leftIcon={<FaPhone />}
+                  >
+                    Contact Us
+                  </Button>
+                </HStack>
+              </VStack>
               
-              <Button
-                size="xl"
-                h="auto"
-                py={6}
-                px={10}
-                fontSize="lg"
-                variant="outline"
-                borderColor="blue.300"
-                color="blue.200"
-                boxShadow="0 4px 20px rgba(255, 255, 255, 0.1)"
-                _hover={{
-                  bg: "whiteAlpha.100",
-                  borderColor: "blue.200",
-                  color: "white",
-                  boxShadow: "0 6px 30px rgba(255, 255, 255, 0.2)",
-                  transform: "translateY(-2px)",
-                }}
+              {/* Right Side - 3D Robot Illustration */}
+              <Box
+                flex="1"
+                display="flex"
+                justify="center"
+                align="center"
+                position="relative"
               >
-                Learn More
-              </Button>
+                <Box
+                  position="relative"
+                  w="400px"
+                  h="400px"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                >
+                  {/* Glow Effect */}
+                  <Box
+                    position="absolute"
+                    w="300px"
+                    h="300px"
+                    bgGradient="radial(circle, cyan.400 0%, transparent 70%)"
+                    opacity="0.3"
+                    borderRadius="full"
+                    filter="blur(40px)"
+                    animation="pulse 3s infinite"
+                  />
+                  
+                  {/* Robot Icon */}
+                  <Icon
+                    as={FaRobot}
+                    fontSize="300px"
+                    color="cyan.300"
+                    filter="drop-shadow(0 10px 30px rgba(0, 255, 255, 0.5))"
+                    animation="float 6s ease-in-out infinite"
+                  />
+                </Box>
+              </Box>
             </HStack>
           </VStack>
+        </Container>
+      </Box>
 
-        {/* Enhanced How It Works */}
-        <VStack spacing={12} w="full" maxW="6xl">
-          <VStack spacing={4} textAlign="center">
-            <Text 
-              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }} 
-              fontWeight="900" 
-              color="white"
-              textShadow="0 2px 10px rgba(255, 255, 255, 0.3)"
+      {/* About Section */}
+      <Container maxW="7xl" py={20}>
+        <HStack
+          spacing={20}
+          align="center"
+          w="full"
+          flexDir={{ base: "column", lg: "row" }}
+        >
+          {/* Left Side - Image */}
+          <Box
+            flex="1"
+            display="flex"
+            justify="center"
+            align="center"
+            position="relative"
+          >
+            <Box
+              w="350px"
+              h="350px"
+              bgGradient="linear(135deg, blue.500, cyan.400)"
+              borderRadius="20px"
+              display="flex"
+              align="center"
+              justify="center"
+              position="relative"
+              boxShadow="0 20px 60px rgba(59, 130, 246, 0.3)"
             >
-              How It Works
-            </Text>
-            <Text fontSize="xl" color="gray.300" maxW="2xl">
-              Get started with robot programming in three simple steps
-            </Text>
-          </VStack>
+              <Icon
+                as={FaHandshake}
+                fontSize="200px"
+                color="white"
+                filter="drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2))"
+              />
+            </Box>
+          </Box>
           
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} w="full">
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              _hover={{
-                boxShadow: "0 20px 60px rgba(255, 255, 255, 0.25)",
-                transform: "translateY(-6px) scale(1.02)",
-                borderColor: "blue.300",
-              }}
-              transition="all 0.4s ease"
-            >
-              <CardBody textAlign="center" py={10}>
-                <Box mb={6} position="relative">
-                  <Icon as={FaClock} fontSize="4xl" color="blue.300" mb={2} />
-                  <Text 
-                    fontWeight="bold" 
-                    color="blue.200" 
-                    bg="blue.900" 
-                    px={3} 
-                    py={1} 
-                    borderRadius="full" 
-                    display="inline-block"
-                    position="absolute"
-                    top="-10px"
-                    right="-10px"
-                    fontSize="sm"
-                  >
-                    01
-                  </Text>
-                </Box>
-                <Text fontSize="2xl" fontWeight="bold" color="white" mb={4}>
-                  Book a Time Slot
+          {/* Right Side - Text Content */}
+          <VStack
+            align="start"
+            spacing={8}
+            flex="1"
+            textAlign={{ base: "center", lg: "left" }}
+          >
+            <VStack spacing={4} align={{ base: "center", lg: "start" }}>
+              <Text
+                fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+                fontWeight="900"
+                color="blue.900"
+                lineHeight="1.2"
+              >
+                Empowering People By{" "}
+                <Text as="span" color="cyan.500">
+                  Keeping Them Well
                 </Text>
-                <Text color="gray.300" fontSize="lg" lineHeight="1.6">
-                  Choose from available time slots that fit your schedule. 
-                  Select your preferred robot type and reserve dedicated simulation time.
-                </Text>
-              </CardBody>
-            </Card>
-
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              _hover={{
-                boxShadow: "0 20px 60px rgba(255, 255, 255, 0.25)",
-                transform: "translateY(-6px) scale(1.02)",
-                borderColor: "blue.300",
-              }}
-              transition="all 0.4s ease"
-            >
-              <CardBody textAlign="center" py={10}>
-                <Box mb={6} position="relative">
-                  <Icon as={FaCode} fontSize="4xl" color="blue.300" mb={2} />
-                  <Text 
-                    fontWeight="bold" 
-                    color="blue.200" 
-                    bg="blue.900" 
-                    px={3} 
-                    py={1} 
-                    borderRadius="full" 
-                    display="inline-block"
-                    position="absolute"
-                    top="-10px"
-                    right="-10px"
-                    fontSize="sm"
-                  >
-                    02
-                  </Text>
-                </Box>
-                <Text fontSize="2xl" fontWeight="bold" color="white" mb={4}>
-                  Write Python Code
-                </Text>
-                <Text color="gray.300" fontSize="lg" lineHeight="1.6">
-                  Use our advanced Monaco editor with ROS integration. 
-                  Write Python code with syntax highlighting, autocomplete, and real-time feedback.
-                </Text>
-              </CardBody>
-            </Card>
-
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              _hover={{
-                boxShadow: "0 20px 60px rgba(255, 255, 255, 0.25)",
-                transform: "translateY(-6px) scale(1.02)",
-                borderColor: "blue.300",
-              }}
-              transition="all 0.4s ease"
-            >
-              <CardBody textAlign="center" py={10}>
-                <Box mb={6} position="relative">
-                  <Icon as={FaVideo} fontSize="4xl" color="blue.300" mb={2} />
-                  <Text 
-                    fontWeight="bold" 
-                    color="blue.200" 
-                    bg="blue.900" 
-                    px={3} 
-                    py={1} 
-                    borderRadius="full" 
-                    display="inline-block"
-                    position="absolute"
-                    top="-10px"
-                    right="-10px"
-                    fontSize="sm"
-                  >
-                    03
-                  </Text>
-                </Box>
-                <Text fontSize="2xl" fontWeight="bold" color="white" mb={4}>
-                  See Live Results
-                </Text>
-                <Text color="gray.300" fontSize="lg" lineHeight="1.6">
-                  Watch your algorithms execute in high-fidelity Gazebo simulations. 
-                  Get instant video feedback and performance analytics.
-                </Text>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
-        </VStack>
-
-        {/* Enhanced Available Robots */}
-        <VStack spacing={12} w="full" maxW="6xl">
-          <VStack spacing={4} textAlign="center">
-            <Text 
-              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }} 
-              fontWeight="900" 
-              color="white"
-              textShadow="0 2px 10px rgba(255, 255, 255, 0.3)"
-            >
-              Available Robots
-            </Text>
-            <Text fontSize="xl" color="gray.300" maxW="2xl">
-              Choose from our advanced robotic platforms for your programming sessions
-            </Text>
-          </VStack>
-          
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} w="full">
-            {robotTypes.map((robot) => (
-              <Card 
-                key={robot.id} 
-                bg="rgba(0, 20, 41, 0.9)" 
-                border="2px solid" 
-                borderColor="blue.500"
-                boxShadow="0 20px 60px rgba(255, 255, 255, 0.15)"
-                backdropFilter="blur(20px)"
-                cursor="pointer"
-                onClick={() => handleRobotClick(robot)}
-                _hover={{ 
-                  borderColor: "blue.300", 
-                  transform: "translateY(-8px) scale(1.03)",
-                  boxShadow: "0 25px 80px rgba(255, 255, 255, 0.25)",
+              </Text>
+              
+              <Text
+                fontSize="lg"
+                color="gray.600"
+                lineHeight="1.6"
+                maxW="xl"
+              >
+                Our AI-powered solutions are designed to enhance human capabilities, 
+                improve workplace safety, and create more efficient business processes 
+                that benefit everyone.
+              </Text>
+            </VStack>
+            
+            {/* Stats/Features */}
+            <SimpleGrid columns={{ base: 2, md: 2 }} spacing={6} w="full">
+              <Card
+                bg="white"
+                border="2px solid"
+                borderColor="blue.100"
+                borderRadius="15px"
+                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+                _hover={{
+                  borderColor: "cyan.300",
+                  boxShadow: "0 15px 40px rgba(59, 130, 246, 0.2)",
+                  transform: "translateY(-5px)",
                 }}
-                transition="all 0.4s ease"
+                transition="all 0.3s ease"
+              >
+                <CardBody textAlign="center" py={6}>
+                  <Icon as={FaUsers} fontSize="3xl" color="cyan.500" mb={3} />
+                  <Stat>
+                    <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
+                      500K+
+                    </StatNumber>
+                    <StatLabel color="gray.600" fontSize="sm">
+                      Users Empowered
+                    </StatLabel>
+                  </Stat>
+                </CardBody>
+              </Card>
+              
+              <Card
+                bg="white"
+                border="2px solid"
+                borderColor="blue.100"
+                borderRadius="15px"
+                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+                _hover={{
+                  borderColor: "cyan.300",
+                  boxShadow: "0 15px 40px rgba(59, 130, 246, 0.2)",
+                  transform: "translateY(-5px)",
+                }}
+                transition="all 0.3s ease"
+              >
+                <CardBody textAlign="center" py={6}>
+                  <Icon as={FaAward} fontSize="3xl" color="cyan.500" mb={3} />
+                  <Stat>
+                    <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
+                      99.8%
+                    </StatNumber>
+                    <StatLabel color="gray.600" fontSize="sm">
+                      Success Rate
+                    </StatLabel>
+                  </Stat>
+                </CardBody>
+              </Card>
+              
+              <Card
+                bg="white"
+                border="2px solid"
+                borderColor="blue.100"
+                borderRadius="15px"
+                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+                _hover={{
+                  borderColor: "cyan.300",
+                  boxShadow: "0 15px 40px rgba(59, 130, 246, 0.2)",
+                  transform: "translateY(-5px)",
+                }}
+                transition="all 0.3s ease"
+              >
+                <CardBody textAlign="center" py={6}>
+                  <Icon as={FaGlobe} fontSize="3xl" color="cyan.500" mb={3} />
+                  <Stat>
+                    <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
+                      120+
+                    </StatNumber>
+                    <StatLabel color="gray.600" fontSize="sm">
+                      Countries
+                    </StatLabel>
+                  </Stat>
+                </CardBody>
+              </Card>
+              
+              <Card
+                bg="white"
+                border="2px solid"
+                borderColor="blue.100"
+                borderRadius="15px"
+                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+                _hover={{
+                  borderColor: "cyan.300",
+                  boxShadow: "0 15px 40px rgba(59, 130, 246, 0.2)",
+                  transform: "translateY(-5px)",
+                }}
+                transition="all 0.3s ease"
+              >
+                <CardBody textAlign="center" py={6}>
+                  <Icon as={FaShieldAlt} fontSize="3xl" color="cyan.500" mb={3} />
+                  <Stat>
+                    <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
+                      24/7
+                    </StatNumber>
+                    <StatLabel color="gray.600" fontSize="sm">
+                      Support
+                    </StatLabel>
+                  </Stat>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+          </VStack>
+        </HStack>
+      </Container>
+
+      {/* Services Section */}
+      <Box bg="gray.50" py={20}>
+        <Container maxW="7xl">
+          <VStack spacing={16} w="full">
+            <VStack spacing={6} textAlign="center">
+              <Text
+                fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+                fontWeight="900"
+                color="blue.900"
+                lineHeight="1.2"
+                maxW="4xl"
+              >
+                Our Purpose Is To Deliver Excellence in{" "}
+                <Text as="span" color="cyan.500">
+                  Service and Execution
+                </Text>
+              </Text>
+              <Text
+                fontSize="lg"
+                color="gray.600"
+                maxW="2xl"
+                lineHeight="1.6"
+              >
+                We provide comprehensive AI and robotics solutions tailored to your business needs
+              </Text>
+            </VStack>
+            
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={8} w="full">
+              {/* Robotic Automation */}
+              <Card
+                bg="white"
+                border="2px solid"
+                borderColor="blue.100"
+                borderRadius="20px"
+                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+                _hover={{
+                  borderColor: "cyan.300",
+                  boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                  transform: "translateY(-10px)",
+                }}
+                transition="all 0.3s ease"
+                overflow="hidden"
+              >
+                <CardBody textAlign="center" py={10}>
+                  <Box
+                    w="80px"
+                    h="80px"
+                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    borderRadius="20px"
+                    display="flex"
+                    align="center"
+                    justify="center"
+                    mx="auto"
+                    mb={6}
+                  >
+                    <Icon as={FaCogs} fontSize="3xl" color="white" />
+                  </Box>
+                  
+                  <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
+                    Robotic Automation
+                  </Text>
+                  
+                  <Text color="gray.600" lineHeight="1.6" mb={6}>
+                    Streamline your operations with intelligent robotic systems that handle repetitive tasks with precision and reliability.
+                  </Text>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="cyan.500"
+                    _hover={{ bg: "cyan.50" }}
+                    rightIcon={<FaArrowRight />}
+                  >
+                    Learn More
+                  </Button>
+                </CardBody>
+              </Card>
+              
+              {/* Machine Learning */}
+              <Card
+                bg="white"
+                border="2px solid"
+                borderColor="blue.100"
+                borderRadius="20px"
+                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+                _hover={{
+                  borderColor: "cyan.300",
+                  boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                  transform: "translateY(-10px)",
+                }}
+                transition="all 0.3s ease"
+                overflow="hidden"
+              >
+                <CardBody textAlign="center" py={10}>
+                  <Box
+                    w="80px"
+                    h="80px"
+                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    borderRadius="20px"
+                    display="flex"
+                    align="center"
+                    justify="center"
+                    mx="auto"
+                    mb={6}
+                  >
+                    <Icon as={FaBrain} fontSize="3xl" color="white" />
+                  </Box>
+                  
+                  <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
+                    Machine Learning
+                  </Text>
+                  
+                  <Text color="gray.600" lineHeight="1.6" mb={6}>
+                    Harness the power of AI to analyze data, predict trends, and make intelligent decisions for your business.
+                  </Text>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="cyan.500"
+                    _hover={{ bg: "cyan.50" }}
+                    rightIcon={<FaArrowRight />}
+                  >
+                    Learn More
+                  </Button>
+                </CardBody>
+              </Card>
+              
+              {/* Education & Science */}
+              <Card
+                bg="white"
+                border="2px solid"
+                borderColor="blue.100"
+                borderRadius="20px"
+                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+                _hover={{
+                  borderColor: "cyan.300",
+                  boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                  transform: "translateY(-10px)",
+                }}
+                transition="all 0.3s ease"
+                overflow="hidden"
+              >
+                <CardBody textAlign="center" py={10}>
+                  <Box
+                    w="80px"
+                    h="80px"
+                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    borderRadius="20px"
+                    display="flex"
+                    align="center"
+                    justify="center"
+                    mx="auto"
+                    mb={6}
+                  >
+                    <Icon as={FaGraduationCap} fontSize="3xl" color="white" />
+                  </Box>
+                  
+                  <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
+                    Education & Science
+                  </Text>
+                  
+                  <Text color="gray.600" lineHeight="1.6" mb={6}>
+                    Advanced educational tools and scientific research platforms powered by cutting-edge AI and robotics technology.
+                  </Text>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="cyan.500"
+                    _hover={{ bg: "cyan.50" }}
+                    rightIcon={<FaArrowRight />}
+                  >
+                    Learn More
+                  </Button>
+                </CardBody>
+              </Card>
+              
+              {/* Predictive Analysis */}
+              <Card
+                bg="white"
+                border="2px solid"
+                borderColor="blue.100"
+                borderRadius="20px"
+                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+                _hover={{
+                  borderColor: "cyan.300",
+                  boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                  transform: "translateY(-10px)",
+                }}
+                transition="all 0.3s ease"
+                overflow="hidden"
+              >
+                <CardBody textAlign="center" py={10}>
+                  <Box
+                    w="80px"
+                    h="80px"
+                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    borderRadius="20px"
+                    display="flex"
+                    align="center"
+                    justify="center"
+                    mx="auto"
+                    mb={6}
+                  >
+                    <Icon as={FaChartLine} fontSize="3xl" color="white" />
+                  </Box>
+                  
+                  <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
+                    Predictive Analysis
+                  </Text>
+                  
+                  <Text color="gray.600" lineHeight="1.6" mb={6}>
+                    Anticipate market trends and business opportunities with our advanced predictive analytics and forecasting models.
+                  </Text>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="cyan.500"
+                    _hover={{ bg: "cyan.50" }}
+                    rightIcon={<FaArrowRight />}
+                  >
+                    Learn More
+                  </Button>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+          </VStack>
+        </Container>
+      </Box>
+
+      {/* Business Growth Section */}
+      <Box
+        position="relative"
+        py={20}
+        bgGradient="linear(135deg, blue.900 0%, blue.800 25%, blue.700 50%, blue.600 75%, blue.500 100%)"
+        overflow="hidden"
+      >
+        {/* Background Pattern */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          opacity="0.05"
+          backgroundImage="url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><polygon points=\"0,0 50,0 100,50 50,100 0,50\" fill=\"%23ffffff\"/></svg>')"
+          backgroundSize="120px 120px"
+          zIndex="0"
+        />
+        
+        <Container maxW="7xl" position="relative" zIndex="1">
+          <HStack
+            spacing={20}
+            align="center"
+            w="full"
+            flexDir={{ base: "column", lg: "row" }}
+          >
+            {/* Left Side - Robot with Tablet */}
+            <Box
+              flex="1"
+              display="flex"
+              justify="center"
+              align="center"
+              position="relative"
+            >
+              <Box
+                position="relative"
+                w="400px"
+                h="400px"
+                display="flex"
+                align="center"
+                justify="center"
+              >
+                {/* Glow Effect */}
+                <Box
+                  position="absolute"
+                  w="300px"
+                  h="300px"
+                  bgGradient="radial(circle, cyan.400 0%, transparent 70%)"
+                  opacity="0.2"
+                  borderRadius="full"
+                  filter="blur(50px)"
+                  animation="pulse 4s infinite"
+                />
+                
+                {/* Robot with Tablet Illustration */}
+                <VStack spacing={4}>
+                  <Icon
+                    as={FaRobot}
+                    fontSize="250px"
+                    color="cyan.300"
+                    filter="drop-shadow(0 10px 30px rgba(0, 255, 255, 0.3))"
+                  />
+                  <Box
+                    w="120px"
+                    h="80px"
+                    bg="white"
+                    borderRadius="10px"
+                    display="flex"
+                    align="center"
+                    justify="center"
+                    boxShadow="0 10px 30px rgba(0, 0, 0, 0.3)"
+                    position="relative"
+                    top="-50px"
+                  >
+                    <Icon as={FaChartLine} fontSize="2xl" color="blue.500" />
+                  </Box>
+                </VStack>
+              </Box>
+            </Box>
+            
+            {/* Right Side - Text Content */}
+            <VStack
+              align={{ base: "center", lg: "start" }}
+              spacing={8}
+              flex="1"
+              textAlign={{ base: "center", lg: "left" }}
+            >
+              <VStack spacing={4} align={{ base: "center", lg: "start" }}>
+                <Text
+                  fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+                  fontWeight="900"
+                  color="white"
+                  lineHeight="1.2"
+                  maxW="3xl"
+                >
+                  Get Closer Look How Business{" "}
+                  <Text as="span" color="cyan.300">
+                    Develop in AI Data Analysis
+                  </Text>
+                </Text>
+                
+                <Text
+                  fontSize="lg"
+                  color="blue.100"
+                  lineHeight="1.6"
+                  maxW="2xl"
+                >
+                  Discover how artificial intelligence and advanced data analytics are transforming 
+                  modern businesses. Our comprehensive solutions provide real-time insights, 
+                  predictive modeling, and automated decision-making capabilities that drive growth 
+                  and innovation.
+                </Text>
+              </VStack>
+              
+              <Button
+                size="lg"
+                px={8}
+                py={6}
+                fontSize="lg"
+                fontWeight="bold"
+                bgGradient="linear(135deg, cyan.400, blue.500)"
+                color="white"
+                boxShadow="0 8px 32px rgba(0, 255, 255, 0.3)"
+                _hover={{
+                  bgGradient: "linear(135deg, cyan.300, blue.400)",
+                  boxShadow: "0 12px 48px rgba(0, 255, 255, 0.4)",
+                  transform: "translateY(-2px)",
+                }}
+                leftIcon={<FaPlay />}
+                onClick={onGetStarted}
+              >
+                Get Started Today
+              </Button>
+            </VStack>
+          </HStack>
+        </Container>
+      </Box>
+
+      {/* Case Studies Section */}
+      <Container maxW="7xl" py={20}>
+        <VStack spacing={16} w="full">
+          <VStack spacing={6} textAlign="center">
+            <Text
+              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+              fontWeight="900"
+              color="blue.900"
+              lineHeight="1.2"
+            >
+              Explore Our{" "}
+              <Text as="span" color="cyan.500">
+                Case Studies
+              </Text>
+            </Text>
+            <Text
+              fontSize="lg"
+              color="gray.600"
+              maxW="2xl"
+              lineHeight="1.6"
+            >
+              Real-world success stories showcasing the transformative power of AI and robotics
+            </Text>
+          </VStack>
+          
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8} w="full">
+            {/* Case Study 1 */}
+            <Card
+              bg="white"
+              borderRadius="20px"
+              overflow="hidden"
+              boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+              _hover={{
+                boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                transform: "translateY(-5px)",
+              }}
+              transition="all 0.3s ease"
+              position="relative"
+              cursor="pointer"
+            >
+              <Box
+                h="200px"
+                bgGradient="linear(135deg, blue.500, cyan.400)"
+                display="flex"
+                align="center"
+                justify="center"
                 position="relative"
                 overflow="hidden"
               >
-                {/* Hover glow effect */}
+                <Icon as={FaCogs} fontSize="6xl" color="white" opacity="0.7" />
                 <Box
                   position="absolute"
                   top="0"
                   left="0"
                   right="0"
                   bottom="0"
-                  bgGradient="radial(circle at center, blue.400 0%, transparent 70%)"
+                  bg="blackAlpha.300"
+                  display="flex"
+                  align="center"
+                  justify="center"
                   opacity="0"
-                  _groupHover={{ opacity: "0.1" }}
-                  transition="opacity 0.4s ease"
-                  zIndex="0"
-                />
-                
-                <CardBody textAlign="center" py={10} position="relative" zIndex="1">
-                  <Box mb={6} position="relative">
-                    <Text 
-                      fontSize="7xl" 
-                      mb={4}
-                      filter="drop-shadow(0 0 20px rgba(26, 140, 255, 0.5))"
-                      transition="all 0.3s ease"
-                      _groupHover={{ transform: "scale(1.1)" }}
-                    >
-                      {robot.image}
-                    </Text>
-                    <Box
-                      position="absolute"
-                      top="50%"
-                      left="50%"
-                      transform="translate(-50%, -50%)"
-                      w="120px"
-                      h="120px"
-                      bgGradient="radial(circle, blue.400 0%, transparent 70%)"
-                      opacity="0.3"
-                      borderRadius="full"
-                      filter="blur(30px)"
-                      zIndex="-1"
-                    />
-                  </Box>
-                  
-                  <Text fontSize="2xl" fontWeight="bold" color="white" mb={4}>
-                    {robot.name}
+                  _hover={{ opacity: "1" }}
+                  transition="opacity 0.3s ease"
+                >
+                  <Text color="white" fontSize="lg" fontWeight="bold">
+                    View Case Study
                   </Text>
-                  <Text color="gray.300" mb={6} fontSize="md" lineHeight="1.6">
-                    {robot.description}
+                </Box>
+              </Box>
+              <CardBody p={6}>
+                <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
+                  Manufacturing Automation Success
+                </Text>
+                <Text color="gray.600" lineHeight="1.6">
+                  How we helped a leading manufacturer increase productivity by 300% through intelligent robotic automation systems.
+                </Text>
+              </CardBody>
+            </Card>
+            
+            {/* Case Study 2 */}
+            <Card
+              bg="white"
+              borderRadius="20px"
+              overflow="hidden"
+              boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+              _hover={{
+                boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                transform: "translateY(-5px)",
+              }}
+              transition="all 0.3s ease"
+              position="relative"
+              cursor="pointer"
+            >
+              <Box
+                h="200px"
+                bgGradient="linear(135deg, cyan.500, blue.400)"
+                display="flex"
+                align="center"
+                justify="center"
+                position="relative"
+                overflow="hidden"
+              >
+                <Icon as={FaBrain} fontSize="6xl" color="white" opacity="0.7" />
+                <Box
+                  position="absolute"
+                  top="0"
+                  left="0"
+                  right="0"
+                  bottom="0"
+                  bg="blackAlpha.300"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                  opacity="0"
+                  _hover={{ opacity: "1" }}
+                  transition="opacity 0.3s ease"
+                >
+                  <Text color="white" fontSize="lg" fontWeight="bold">
+                    View Case Study
                   </Text>
+                </Box>
+              </Box>
+              <CardBody p={6}>
+                <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
+                  Healthcare AI Revolution
+                </Text>
+                <Text color="gray.600" lineHeight="1.6">
+                  Transforming patient care with AI-powered diagnostic tools that reduced diagnosis time by 80%.
+                </Text>
+              </CardBody>
+            </Card>
+            
+            {/* Case Study 3 */}
+            <Card
+              bg="white"
+              borderRadius="20px"
+              overflow="hidden"
+              boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+              _hover={{
+                boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                transform: "translateY(-5px)",
+              }}
+              transition="all 0.3s ease"
+              position="relative"
+              cursor="pointer"
+            >
+              <Box
+                h="200px"
+                bgGradient="linear(135deg, blue.400, cyan.500)"
+                display="flex"
+                align="center"
+                justify="center"
+                position="relative"
+                overflow="hidden"
+              >
+                <Icon as={FaChartLine} fontSize="6xl" color="white" opacity="0.7" />
+                <Box
+                  position="absolute"
+                  top="0"
+                  left="0"
+                  right="0"
+                  bottom="0"
+                  bg="blackAlpha.300"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                  opacity="0"
+                  _hover={{ opacity: "1" }}
+                  transition="opacity 0.3s ease"
+                >
+                  <Text color="white" fontSize="lg" fontWeight="bold">
+                    View Case Study
+                  </Text>
+                </Box>
+              </Box>
+              <CardBody p={6}>
+                <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
+                  Retail Analytics Breakthrough
+                </Text>
+                <Text color="gray.600" lineHeight="1.6">
+                  Leveraging predictive analytics to optimize inventory management and increase sales by 150%.
+                </Text>
+              </CardBody>
+            </Card>
+            
+            {/* Case Study 4 */}
+            <Card
+              bg="white"
+              borderRadius="20px"
+              overflow="hidden"
+              boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+              _hover={{
+                boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                transform: "translateY(-5px)",
+              }}
+              transition="all 0.3s ease"
+              position="relative"
+              cursor="pointer"
+            >
+              <Box
+                h="200px"
+                bgGradient="linear(135deg, cyan.400, blue.600)"
+                display="flex"
+                align="center"
+                justify="center"
+                position="relative"
+                overflow="hidden"
+              >
+                <Icon as={FaGraduationCap} fontSize="6xl" color="white" opacity="0.7" />
+                <Box
+                  position="absolute"
+                  top="0"
+                  left="0"
+                  right="0"
+                  bottom="0"
+                  bg="blackAlpha.300"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                  opacity="0"
+                  _hover={{ opacity: "1" }}
+                  transition="opacity 0.3s ease"
+                >
+                  <Text color="white" fontSize="lg" fontWeight="bold">
+                    View Case Study
+                  </Text>
+                </Box>
+              </Box>
+              <CardBody p={6}>
+                <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
+                  Educational Technology Innovation
+                </Text>
+                <Text color="gray.600" lineHeight="1.6">
+                  Revolutionizing online learning with AI tutors that improved student engagement by 250%.
+                </Text>
+              </CardBody>
+            </Card>
+            
+            {/* Case Study 5 */}
+            <Card
+              bg="white"
+              borderRadius="20px"
+              overflow="hidden"
+              boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+              _hover={{
+                boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                transform: "translateY(-5px)",
+              }}
+              transition="all 0.3s ease"
+              position="relative"
+              cursor="pointer"
+            >
+              <Box
+                h="200px"
+                bgGradient="linear(135deg, blue.600, cyan.400)"
+                display="flex"
+                align="center"
+                justify="center"
+                position="relative"
+                overflow="hidden"
+              >
+                <Icon as={FaLightbulb} fontSize="6xl" color="white" opacity="0.7" />
+                <Box
+                  position="absolute"
+                  top="0"
+                  left="0"
+                  right="0"
+                  bottom="0"
+                  bg="blackAlpha.300"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                  opacity="0"
+                  _hover={{ opacity: "1" }}
+                  transition="opacity 0.3s ease"
+                >
+                  <Text color="white" fontSize="lg" fontWeight="bold">
+                    View Case Study
+                  </Text>
+                </Box>
+              </Box>
+              <CardBody p={6}>
+                <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
+                  Smart City Infrastructure
+                </Text>
+                <Text color="gray.600" lineHeight="1.6">
+                  Building intelligent urban systems that reduced energy consumption by 40% using IoT and AI.
+                </Text>
+              </CardBody>
+            </Card>
+            
+            {/* Case Study 6 */}
+            <Card
+              bg="white"
+              borderRadius="20px"
+              overflow="hidden"
+              boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+              _hover={{
+                boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
+                transform: "translateY(-5px)",
+              }}
+              transition="all 0.3s ease"
+              position="relative"
+              cursor="pointer"
+            >
+              <Box
+                h="200px"
+                bgGradient="linear(135deg, cyan.600, blue.400)"
+                display="flex"
+                align="center"
+                justify="center"
+                position="relative"
+                overflow="hidden"
+              >
+                <Icon as={FaShieldAlt} fontSize="6xl" color="white" opacity="0.7" />
+                <Box
+                  position="absolute"
+                  top="0"
+                  left="0"
+                  right="0"
+                  bottom="0"
+                  bg="blackAlpha.300"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                  opacity="0"
+                  _hover={{ opacity: "1" }}
+                  transition="opacity 0.3s ease"
+                >
+                  <Text color="white" fontSize="lg" fontWeight="bold">
+                    View Case Study
+                  </Text>
+                </Box>
+              </Box>
+              <CardBody p={6}>
+                <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
+                  Cybersecurity AI Defense
+                </Text>
+                <Text color="gray.600" lineHeight="1.6">
+                  Protecting enterprise networks with AI-powered threat detection that stopped 99.9% of attacks.
+                </Text>
+              </CardBody>
+            </Card>
+          </SimpleGrid>
+        </VStack>
+      </Container>
+
+      {/* Testimonials Section */}
+      <Box bg="gray.50" py={20}>
+        <Container maxW="7xl">
+          <VStack spacing={16} w="full">
+            <VStack spacing={6} textAlign="center">
+              <Text
+                fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+                fontWeight="900"
+                color="blue.900"
+                lineHeight="1.2"
+              >
+                Hear it From Our{" "}
+                <Text as="span" color="cyan.500">
+                  Clients
+                </Text>
+              </Text>
+              <Text
+                fontSize="lg"
+                color="gray.600"
+                maxW="2xl"
+                lineHeight="1.6"
+              >
+                Real feedback from businesses that have transformed with our AI solutions
+              </Text>
+            </VStack>
+            
+            {/* Single Testimonial */}
+            <Card
+              bg="white"
+              border="2px solid"
+              borderColor="blue.100"
+              borderRadius="20px"
+              boxShadow="0 20px 60px rgba(59, 130, 246, 0.1)"
+              maxW="4xl"
+              mx="auto"
+              p={8}
+            >
+              <CardBody>
+                <VStack spacing={8} textAlign="center">
+                  {/* Quote Icon */}
+                  <Icon as={FaQuoteLeft} fontSize="4xl" color="cyan.400" />
                   
-                  <VStack spacing={3}>
-                    <Text fontSize="sm" color="blue.300" fontWeight="bold" textTransform="uppercase" letterSpacing="wide">
-                      Key Features
-                    </Text>
-                    <VStack spacing={2}>
-                      {robot.features.map((feature, index) => (
-                        <Badge 
-                          key={index} 
-                          colorScheme="blue" 
-                          variant="subtle"
-                          px={3}
-                          py={1}
-                          borderRadius="full"
-                          fontSize="xs"
-                          fontWeight="bold"
-                          bg="blue.900"
-                          color="blue.200"
-                          border="1px solid"
-                          borderColor="blue.600"
-                        >
-                          {feature}
-                        </Badge>
-                      ))}
-                    </VStack>
-                  </VStack>
-                  
-                  <Button
-                    mt={6}
-                    size="md"
-                    bgGradient="linear(135deg, blue.400, blue.600)"
-                    color="white"
-                    _hover={{
-                      bgGradient: "linear(135deg, blue.300, blue.500)",
-                    }}
-                    leftIcon={<FaCheck />}
+                  {/* Testimonial Text */}
+                  <Text
+                    fontSize={{ base: "lg", md: "xl" }}
+                    color="gray.700"
+                    lineHeight="1.8"
+                    fontStyle="italic"
+                    maxW="3xl"
                   >
-                    Select Robot
-                  </Button>
-                </CardBody>
-              </Card>
-            ))}
-          </SimpleGrid>
-        </VStack>
-
-        </VStack>
-
-        {/* Statistics Section */}
-        <VStack spacing={12} w="full" maxW="6xl" py={16}>
-          <VStack spacing={4} textAlign="center">
-            <Text 
-              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }} 
-              fontWeight="900" 
-              color="white"
-              textShadow="0 2px 10px rgba(255, 255, 255, 0.3)"
-            >
-              Trusted by Thousands
-            </Text>
-            <Text fontSize="xl" color="gray.300" maxW="2xl">
-              Join a growing community of robotics enthusiasts and professionals
-            </Text>
+                    "The AI solutions provided by this team have completely revolutionized our manufacturing process. 
+                    We've seen a 300% increase in productivity and a 50% reduction in operational costs. 
+                    The implementation was seamless, and their ongoing support has been exceptional. 
+                    I highly recommend their services to any business looking to leverage the power of artificial intelligence."
+                  </Text>
+                  
+                  {/* Star Rating */}
+                  <HStack spacing={1}>
+                    <Icon as={FaStar} color="yellow.400" fontSize="xl" />
+                    <Icon as={FaStar} color="yellow.400" fontSize="xl" />
+                    <Icon as={FaStar} color="yellow.400" fontSize="xl" />
+                    <Icon as={FaStar} color="yellow.400" fontSize="xl" />
+                    <Icon as={FaStar} color="yellow.400" fontSize="xl" />
+                  </HStack>
+                  
+                  {/* Client Info */}
+                  <HStack spacing={4} align="center">
+                    <Avatar
+                      size="lg"
+                      name="Sarah Johnson"
+                      src="https://images.unsplash.com/photo-1494790108755-2616b612b7e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
+                    />
+                    <VStack align="start" spacing={0}>
+                      <Text fontSize="lg" fontWeight="bold" color="blue.900">
+                        Sarah Johnson
+                      </Text>
+                      <Text fontSize="md" color="gray.600">
+                        CEO, TechCorp Industries
+                      </Text>
+                      <Text fontSize="sm" color="cyan.500">
+                        Manufacturing & Automation
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              </CardBody>
+            </Card>
           </VStack>
-          
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={8} w="full">
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              textAlign="center"
-              py={6}
-            >
-              <CardBody>
-                <Stat textAlign="center">
-                  <StatNumber fontSize="4xl" color="blue.300" fontWeight="bold">
-                    10K+
-                  </StatNumber>
-                  <StatLabel color="white" fontSize="lg" fontWeight="semibold">
-                    Active Users
-                  </StatLabel>
-                  <StatHelpText color="gray.400">
-                    Programming robots daily
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-            
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              textAlign="center"
-              py={6}
-            >
-              <CardBody>
-                <Stat textAlign="center">
-                  <StatNumber fontSize="4xl" color="blue.300" fontWeight="bold">
-                    50K+
-                  </StatNumber>
-                  <StatLabel color="white" fontSize="lg" fontWeight="semibold">
-                    Code Sessions
-                  </StatLabel>
-                  <StatHelpText color="gray.400">
-                    Successfully executed
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-            
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              textAlign="center"
-              py={6}
-            >
-              <CardBody>
-                <Stat textAlign="center">
-                  <StatNumber fontSize="4xl" color="blue.300" fontWeight="bold">
-                    99.9%
-                  </StatNumber>
-                  <StatLabel color="white" fontSize="lg" fontWeight="semibold">
-                    Uptime
-                  </StatLabel>
-                  <StatHelpText color="gray.400">
-                    Always available
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-            
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              textAlign="center"
-              py={6}
-            >
-              <CardBody>
-                <Stat textAlign="center">
-                  <StatNumber fontSize="4xl" color="blue.300" fontWeight="bold">
-                    24/7
-                  </StatNumber>
-                  <StatLabel color="white" fontSize="lg" fontWeight="semibold">
-                    Support
-                  </StatLabel>
-                  <StatHelpText color="gray.400">
-                    Expert assistance
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
-        </VStack>
+        </Container>
+      </Box>
 
-        {/* Benefits Section */}
-        <VStack spacing={12} w="full" maxW="6xl" py={16}>
-          <VStack spacing={4} textAlign="center">
-            <Text 
-              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }} 
-              fontWeight="900" 
-              color="white"
-              textShadow="0 2px 10px rgba(255, 255, 255, 0.3)"
-            >
-              Why Choose Our Platform
-            </Text>
-            <Text fontSize="xl" color="gray.300" maxW="2xl">
-              Experience the future of robotics education and development
-            </Text>
-          </VStack>
-          
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8} w="full">
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              p={8}
-            >
-              <CardBody>
-                <HStack spacing={4} align="start">
-                  <Icon as={FaUsers} fontSize="3xl" color="blue.300" mt={1} />
-                  <VStack align="start" spacing={3}>
-                    <Text fontSize="xl" fontWeight="bold" color="white">
-                      Expert Community
-                    </Text>
-                    <Text color="gray.300" lineHeight="1.6">
-                      Join thousands of robotics engineers, researchers, and students. 
-                      Share knowledge, collaborate on projects, and learn from industry experts.
-                    </Text>
-                  </VStack>
-                </HStack>
-              </CardBody>
-            </Card>
-            
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              p={8}
-            >
-              <CardBody>
-                <HStack spacing={4} align="start">
-                  <Icon as={FaRocket} fontSize="3xl" color="blue.300" mt={1} />
-                  <VStack align="start" spacing={3}>
-                    <Text fontSize="xl" fontWeight="bold" color="white">
-                      Cutting-Edge Technology
-                    </Text>
-                    <Text color="gray.300" lineHeight="1.6">
-                      Access the latest robotics frameworks including ROS Noetic, Gazebo simulation, 
-                      and state-of-the-art robot models with realistic physics.
-                    </Text>
-                  </VStack>
-                </HStack>
-              </CardBody>
-            </Card>
-            
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              p={8}
-            >
-              <CardBody>
-                <HStack spacing={4} align="start">
-                  <Icon as={FaCheck} fontSize="3xl" color="blue.300" mt={1} />
-                  <VStack align="start" spacing={3}>
-                    <Text fontSize="xl" fontWeight="bold" color="white">
-                      Hands-On Learning
-                    </Text>
-                    <Text color="gray.300" lineHeight="1.6">
-                      Move beyond theory with practical, project-based learning. 
-                      Build real skills through interactive programming and immediate feedback.
-                    </Text>
-                  </VStack>
-                </HStack>
-              </CardBody>
-            </Card>
-            
-            <Card 
-              bg="rgba(0, 20, 41, 0.8)" 
-              border="2px solid" 
-              borderColor="blue.400"
-              boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-              backdropFilter="blur(20px)"
-              p={8}
-            >
-              <CardBody>
-                <HStack spacing={4} align="start">
-                  <Icon as={FaClock} fontSize="3xl" color="blue.300" mt={1} />
-                  <VStack align="start" spacing={3}>
-                    <Text fontSize="xl" fontWeight="bold" color="white">
-                      Flexible Scheduling
-                    </Text>
-                    <Text color="gray.300" lineHeight="1.6">
-                      Book sessions that fit your schedule. Available 24/7 with instant access 
-                      to high-performance computing resources and simulation environments.
-                    </Text>
-                  </VStack>
-                </HStack>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
-        </VStack>
-
-        {/* FAQ Section */}
-        <VStack spacing={12} w="full" maxW="4xl" py={16}>
-          <VStack spacing={4} textAlign="center">
-            <Text 
-              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }} 
-              fontWeight="900" 
-              color="white"
-              textShadow="0 2px 10px rgba(255, 255, 255, 0.3)"
-            >
-              Frequently Asked Questions
-            </Text>
-            <Text fontSize="xl" color="gray.300" maxW="2xl">
-              Everything you need to know about our robotics platform
-            </Text>
-          </VStack>
-          
-          <Card 
-            bg="rgba(0, 20, 41, 0.8)" 
-            border="2px solid" 
-            borderColor="blue.400"
-            boxShadow="0 16px 48px rgba(255, 255, 255, 0.15)"
-            backdropFilter="blur(20px)"
+      {/* FAQ + Contact Section */}
+      <Container maxW="7xl" py={20}>
+        <HStack
+          spacing={20}
+          align="start"
+          w="full"
+          flexDir={{ base: "column", lg: "row" }}
+        >
+          {/* Left Side - FAQ */}
+          <VStack
+            align="start"
+            spacing={8}
+            flex="1"
             w="full"
           >
-            <CardBody p={6}>
-              <Accordion allowMultiple>
-                <AccordionItem border="none" py={2}>
-                  <AccordionButton 
-                    _hover={{ bg: "whiteAlpha.100" }} 
-                    borderRadius="md" 
-                    py={4}
-                  >
-                    <Box flex="1" textAlign="left">
-                      <Text fontSize="lg" fontWeight="bold" color="white">
-                        What programming languages are supported?
-                      </Text>
-                    </Box>
-                    <AccordionIcon color="blue.300" />
-                  </AccordionButton>
-                  <AccordionPanel pb={4} color="gray.300" fontSize="md" lineHeight="1.6">
-                    Our platform primarily supports Python with ROS (Robot Operating System) integration. 
-                    You'll have access to comprehensive ROS libraries, including navigation, manipulation, 
-                    perception, and control packages.
-                  </AccordionPanel>
-                </AccordionItem>
-
-                <AccordionItem border="none" py={2}>
-                  <AccordionButton 
-                    _hover={{ bg: "whiteAlpha.100" }} 
-                    borderRadius="md" 
-                    py={4}
-                  >
-                    <Box flex="1" textAlign="left">
-                      <Text fontSize="lg" fontWeight="bold" color="white">
-                        How realistic are the robot simulations?
-                      </Text>
-                    </Box>
-                    <AccordionIcon color="blue.300" />
-                  </AccordionButton>
-                  <AccordionPanel pb={4} color="gray.300" fontSize="md" lineHeight="1.6">
-                    Our simulations use Gazebo with high-fidelity physics engines, realistic sensor models, 
-                    and accurate robot dynamics. The virtual environments closely mirror real-world conditions, 
-                    making the transition to physical robots seamless.
-                  </AccordionPanel>
-                </AccordionItem>
-
-                <AccordionItem border="none" py={2}>
-                  <AccordionButton 
-                    _hover={{ bg: "whiteAlpha.100" }} 
-                    borderRadius="md" 
-                    py={4}
-                  >
-                    <Box flex="1" textAlign="left">
-                      <Text fontSize="lg" fontWeight="bold" color="white">
-                        Can I save and share my code?
-                      </Text>
-                    </Box>
-                    <AccordionIcon color="blue.300" />
-                  </AccordionButton>
-                  <AccordionPanel pb={4} color="gray.300" fontSize="md" lineHeight="1.6">
-                    Yes! Your code is automatically saved during each session. You can download your projects, 
-                    share them with colleagues, and build a portfolio of your robotics programming work.
-                  </AccordionPanel>
-                </AccordionItem>
-
-                <AccordionItem border="none" py={2}>
-                  <AccordionButton 
-                    _hover={{ bg: "whiteAlpha.100" }} 
-                    borderRadius="md" 
-                    py={4}
-                  >
-                    <Box flex="1" textAlign="left">
-                      <Text fontSize="lg" fontWeight="bold" color="white">
-                        What if I'm new to robotics?
-                      </Text>
-                    </Box>
-                    <AccordionIcon color="blue.300" />
-                  </AccordionButton>
-                  <AccordionPanel pb={4} color="gray.300" fontSize="md" lineHeight="1.6">
-                    Perfect! Our platform includes beginner-friendly tutorials, example code snippets, 
-                    and guided projects. Start with basic movement commands and gradually work up to 
-                    complex autonomous behaviors.
-                  </AccordionPanel>
-                </AccordionItem>
-              </Accordion>
-            </CardBody>
-          </Card>
-        </VStack>
-
-        {/* Enhanced Call to Action */}
-        <VStack spacing={8} textAlign="center" py={20} maxW="4xl">
-          <VStack spacing={6}>
-            <Text 
-              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }} 
-              fontWeight="900" 
-              color="white"
-              textShadow="0 2px 10px rgba(255, 255, 255, 0.3)"
-              lineHeight="1.2"
+            <VStack spacing={4} align="start" w="full">
+              <Text
+                fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
+                fontWeight="900"
+                color="blue.900"
+                lineHeight="1.2"
+              >
+                Frequently Asked{" "}
+                <Text as="span" color="cyan.500">
+                  Questions
+                </Text>
+              </Text>
+              <Text
+                fontSize="lg"
+                color="gray.600"
+                lineHeight="1.6"
+              >
+                Get answers to common questions about our AI and robotics solutions
+              </Text>
+            </VStack>
+            
+            <Card
+              bg="white"
+              border="2px solid"
+              borderColor="blue.100"
+              borderRadius="15px"
+              boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+              w="full"
             >
-              Ready to Transform Your 
-            </Text>
-            <Text 
-              fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }} 
-              fontWeight="900" 
-              bgGradient="linear(45deg, blue.300, blue.500)"
-              bgClip="text"
-              lineHeight="1.2"
-            >
-              Robotics Journey?
-            </Text>
-            <Text fontSize="xl" color="gray.300" maxW="2xl" lineHeight="1.6">
-              Join thousands of engineers, researchers, and students who are already building the future with robots. 
-              Start your first programming session today.
-            </Text>
+              <CardBody p={4}>
+                <Accordion allowMultiple>
+                  <AccordionItem border="none">
+                    <AccordionButton
+                      _hover={{ bg: "blue.50" }}
+                      borderRadius="md"
+                      py={4}
+                    >
+                      <Box flex="1" textAlign="left">
+                        <Text fontSize="lg" fontWeight="bold" color="blue.900">
+                          What industries do you serve?
+                        </Text>
+                      </Box>
+                      <AccordionIcon color="cyan.500" />
+                    </AccordionButton>
+                    <AccordionPanel pb={4} color="gray.600" fontSize="md" lineHeight="1.6">
+                      We serve a wide range of industries including manufacturing, healthcare, 
+                      retail, education, finance, and smart cities. Our AI solutions are customizable 
+                      to meet the specific needs of any business sector.
+                    </AccordionPanel>
+                  </AccordionItem>
+
+                  <AccordionItem border="none">
+                    <AccordionButton
+                      _hover={{ bg: "blue.50" }}
+                      borderRadius="md"
+                      py={4}
+                    >
+                      <Box flex="1" textAlign="left">
+                        <Text fontSize="lg" fontWeight="bold" color="blue.900">
+                          How long does implementation take?
+                        </Text>
+                      </Box>
+                      <AccordionIcon color="cyan.500" />
+                    </AccordionButton>
+                    <AccordionPanel pb={4} color="gray.600" fontSize="md" lineHeight="1.6">
+                      Implementation timelines vary based on project complexity. Simple automation 
+                      projects can be deployed in 2-4 weeks, while comprehensive AI systems may 
+                      take 3-6 months. We provide detailed timelines during consultation.
+                    </AccordionPanel>
+                  </AccordionItem>
+
+                  <AccordionItem border="none">
+                    <AccordionButton
+                      _hover={{ bg: "blue.50" }}
+                      borderRadius="md"
+                      py={4}
+                    >
+                      <Box flex="1" textAlign="left">
+                        <Text fontSize="lg" fontWeight="bold" color="blue.900">
+                          Do you provide ongoing support?
+                        </Text>
+                      </Box>
+                      <AccordionIcon color="cyan.500" />
+                    </AccordionButton>
+                    <AccordionPanel pb={4} color="gray.600" fontSize="md" lineHeight="1.6">
+                      Yes, we offer comprehensive 24/7 support, regular system updates, 
+                      performance monitoring, and continuous optimization to ensure your 
+                      AI solutions deliver maximum value over time.
+                    </AccordionPanel>
+                  </AccordionItem>
+
+                  <AccordionItem border="none">
+                    <AccordionButton
+                      _hover={{ bg: "blue.50" }}
+                      borderRadius="md"
+                      py={4}
+                    >
+                      <Box flex="1" textAlign="left">
+                        <Text fontSize="lg" fontWeight="bold" color="blue.900">
+                          What's the ROI of AI implementation?
+                        </Text>
+                      </Box>
+                      <AccordionIcon color="cyan.500" />
+                    </AccordionButton>
+                    <AccordionPanel pb={4} color="gray.600" fontSize="md" lineHeight="1.6">
+                      Our clients typically see ROI within 6-12 months, with average productivity 
+                      increases of 200-400% and cost reductions of 30-60%. We provide detailed 
+                      ROI projections during the initial consultation phase.
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
+              </CardBody>
+            </Card>
           </VStack>
           
-          <HStack spacing={6} flexWrap="wrap" justify="center">
-            <Button
-              size="xl"
-              h="auto"
-              py={8}
-              px={16}
-              fontSize="xl"
-              fontWeight="bold"
-              bgGradient="linear(135deg, blue.400, blue.600)"
-              color="white"
-              boxShadow="0 12px 48px rgba(26, 140, 255, 0.4)"
-              _hover={{
-                bgGradient: "linear(135deg, blue.300, blue.500)",
-                boxShadow: "0 16px 64px rgba(26, 140, 255, 0.6)",
-                transform: "translateY(-4px)",
-              }}
-              onClick={onGetStarted}
-              leftIcon={<FaRocket />}
-            >
-              Book Your Session Now
-            </Button>
-          </HStack>
-          
-          <Text fontSize="sm" color="gray.500">
-            No credit card required • Free trial available • Cancel anytime
-          </Text>
-        </VStack>
-
-        {/* Enhanced Robot Details Modal */}
-        <Modal isOpen={isOpen} onClose={onClose} size="xl">
-          <ModalOverlay backdropFilter="blur(10px)" />
-          <ModalContent 
-            bg="rgba(0, 20, 41, 0.95)" 
-            color="white"
-            border="2px solid"
-            borderColor="blue.400"
-            boxShadow="0 25px 80px rgba(255, 255, 255, 0.2)"
-            backdropFilter="blur(20px)"
+          {/* Right Side - Contact Form */}
+          <VStack
+            align="start"
+            spacing={8}
+            flex="1"
+            w="full"
           >
-            <ModalHeader>
-              <HStack spacing={4}>
-                <Text fontSize="4xl">{selectedRobot?.image}</Text>
-                <VStack align="start" spacing={1}>
-                  <Text fontSize="2xl" fontWeight="bold">{selectedRobot?.name}</Text>
-                  <Text fontSize="sm" color="blue.300" fontWeight="semibold" textTransform="uppercase" letterSpacing="wide">
-                    Advanced Robotics Platform
-                  </Text>
-                </VStack>
-              </HStack>
-            </ModalHeader>
-            <ModalCloseButton 
-              color="gray.400" 
-              _hover={{ color: "white", bg: "whiteAlpha.200" }}
-            />
-            <ModalBody pb={8}>
-              <VStack spacing={6} align="start">
-                <Text color="gray.300" fontSize="lg" lineHeight="1.6">
-                  {selectedRobot?.description}
+            <VStack spacing={4} align="start" w="full">
+              <Text
+                fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
+                fontWeight="900"
+                color="blue.900"
+                lineHeight="1.2"
+              >
+                Get in{" "}
+                <Text as="span" color="cyan.500">
+                  Touch
                 </Text>
-                
-                <Box w="full">
-                  <Text fontWeight="bold" mb={4} fontSize="lg" color="blue.200">
-                    Key Features & Capabilities:
-                  </Text>
-                  <SimpleGrid columns={1} spacing={3}>
-                    {selectedRobot?.features.map((feature, index) => (
-                      <HStack key={index} spacing={3} p={3} bg="whiteAlpha.50" borderRadius="md" border="1px solid" borderColor="blue.700">
-                        <Icon as={FaCheck} color="blue.300" fontSize="sm" />
-                        <Text fontSize="md" color="white">{feature}</Text>
-                      </HStack>
-                    ))}
-                  </SimpleGrid>
-                </Box>
-
-                <Box w="full" pt={4}>
+              </Text>
+              <Text
+                fontSize="lg"
+                color="gray.600"
+                lineHeight="1.6"
+              >
+                Ready to transform your business with AI? Let's discuss your project.
+              </Text>
+            </VStack>
+            
+            <Card
+              bg="white"
+              border="2px solid"
+              borderColor="blue.100"
+              borderRadius="15px"
+              boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
+              w="full"
+            >
+              <CardBody p={8}>
+                <VStack spacing={6} w="full">
+                  <FormControl>
+                    <FormLabel color="blue.900" fontWeight="semibold">
+                      Full Name
+                    </FormLabel>
+                    <Input
+                      placeholder="Enter your full name"
+                      size="lg"
+                      borderColor="blue.200"
+                      _hover={{ borderColor: "cyan.400" }}
+                      _focus={{ borderColor: "cyan.500", boxShadow: "0 0 0 1px var(--chakra-colors-cyan-500)" }}
+                    />
+                  </FormControl>
+                  
+                  <FormControl>
+                    <FormLabel color="blue.900" fontWeight="semibold">
+                      Email Address
+                    </FormLabel>
+                    <Input
+                      type="email"
+                      placeholder="Enter your email address"
+                      size="lg"
+                      borderColor="blue.200"
+                      _hover={{ borderColor: "cyan.400" }}
+                      _focus={{ borderColor: "cyan.500", boxShadow: "0 0 0 1px var(--chakra-colors-cyan-500)" }}
+                    />
+                  </FormControl>
+                  
+                  <FormControl>
+                    <FormLabel color="blue.900" fontWeight="semibold">
+                      Message
+                    </FormLabel>
+                    <Textarea
+                      placeholder="Tell us about your project and how we can help..."
+                      rows={5}
+                      resize="vertical"
+                      borderColor="blue.200"
+                      _hover={{ borderColor: "cyan.400" }}
+                      _focus={{ borderColor: "cyan.500", boxShadow: "0 0 0 1px var(--chakra-colors-cyan-500)" }}
+                    />
+                  </FormControl>
+                  
                   <Button
                     size="lg"
                     w="full"
-                    h="auto"
-                    py={4}
-                    bgGradient="linear(135deg, blue.400, blue.600)"
-                    color="white"
+                    py={6}
                     fontSize="lg"
                     fontWeight="bold"
-                    boxShadow="0 8px 32px rgba(26, 140, 255, 0.4)"
+                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    color="white"
+                    boxShadow="0 8px 32px rgba(0, 255, 255, 0.3)"
                     _hover={{
-                      bgGradient: "linear(135deg, blue.300, blue.500)",
-                      boxShadow: "0 12px 48px rgba(26, 140, 255, 0.6)",
+                      bgGradient: "linear(135deg, cyan.300, blue.400)",
+                      boxShadow: "0 12px 48px rgba(0, 255, 255, 0.4)",
                       transform: "translateY(-2px)",
                     }}
-                    onClick={() => {
-                      onClose();
-                      onGetStarted();
-                    }}
-                    leftIcon={<FaRocket />}
+                    leftIcon={<FaArrowRight />}
                   >
-                    Start Programming This Robot
+                    Send Message
                   </Button>
-                </Box>
-              </VStack>
-            </ModalBody>
-          </ModalContent>
-        </Modal>
+                </VStack>
+              </CardBody>
+            </Card>
+          </VStack>
+        </HStack>
       </Container>
+
+      {/* Footer */}
+      <Box
+        position="relative"
+        py={16}
+        bgGradient="linear(135deg, blue.900 0%, blue.800 25%, blue.700 50%, blue.600 75%, blue.500 100%)"
+        overflow="hidden"
+      >
+        {/* Background Tech Pattern */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          opacity="0.05"
+          backgroundImage="url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 200 200\"><path d=\"M20 20h40v40h-40zM80 20h40v40h-40zM140 20h40v40h-40zM20 80h40v40h-40zM80 80h40v40h-40zM140 80h40v40h-40zM20 140h40v40h-40zM80 140h40v40h-40zM140 140h40v40h-40z\" fill=\"none\" stroke=\"%23ffffff\" stroke-width=\"2\"/><circle cx=\"40\" cy=\"40\" r=\"5\" fill=\"%23ffffff\"/><circle cx=\"100\" cy=\"40\" r=\"5\" fill=\"%23ffffff\"/><circle cx=\"160\" cy=\"40\" r=\"5\" fill=\"%23ffffff\"/><circle cx=\"40\" cy=\"100\" r=\"5\" fill=\"%23ffffff\"/><circle cx=\"100\" cy=\"100\" r=\"5\" fill=\"%23ffffff\"/><circle cx=\"160\" cy=\"100\" r=\"5\" fill=\"%23ffffff\"/><circle cx=\"40\" cy=\"160\" r=\"5\" fill=\"%23ffffff\"/><circle cx=\"100\" cy=\"160\" r=\"5\" fill=\"%23ffffff\"/><circle cx=\"160\" cy=\"160\" r=\"5\" fill=\"%23ffffff\"/></svg>')"
+          backgroundSize="200px 200px"
+          zIndex="0"
+        />
+        
+        <Container maxW="7xl" position="relative" zIndex="1">
+          <VStack spacing={12} w="full">
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={10} w="full">
+              {/* Company Info */}
+              <VStack align="start" spacing={6}>
+                <HStack spacing={3}>
+                  <Icon as={FaRobot} fontSize="3xl" color="cyan.300" />
+                  <Text fontSize="2xl" fontWeight="bold" color="white">
+                    AI Robotics
+                  </Text>
+                </HStack>
+                <Text color="blue.100" lineHeight="1.6" maxW="sm">
+                  Transforming businesses worldwide with cutting-edge artificial intelligence 
+                  and robotics solutions. Building the future, one innovation at a time.
+                </Text>
+                <HStack spacing={4}>
+                  <Link href="#" _hover={{ color: "cyan.300" }}>
+                    <Icon as={FaFacebook} fontSize="xl" color="blue.200" />
+                  </Link>
+                  <Link href="#" _hover={{ color: "cyan.300" }}>
+                    <Icon as={FaTwitter} fontSize="xl" color="blue.200" />
+                  </Link>
+                  <Link href="#" _hover={{ color: "cyan.300" }}>
+                    <Icon as={FaLinkedin} fontSize="xl" color="blue.200" />
+                  </Link>
+                  <Link href="#" _hover={{ color: "cyan.300" }}>
+                    <Icon as={FaGithub} fontSize="xl" color="blue.200" />
+                  </Link>
+                </HStack>
+              </VStack>
+              
+              {/* Quick Links */}
+              <VStack align="start" spacing={4}>
+                <Text fontSize="lg" fontWeight="bold" color="cyan.300">
+                  Quick Links
+                </Text>
+                <VStack align="start" spacing={2}>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    About Us
+                  </Link>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Our Story
+                  </Link>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Case Studies
+                  </Link>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Blog
+                  </Link>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Careers
+                  </Link>
+                </VStack>
+              </VStack>
+              
+              {/* Services */}
+              <VStack align="start" spacing={4}>
+                <Text fontSize="lg" fontWeight="bold" color="cyan.300">
+                  Services
+                </Text>
+                <VStack align="start" spacing={2}>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Robotic Automation
+                  </Link>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Machine Learning
+                  </Link>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Education & Science
+                  </Link>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Predictive Analysis
+                  </Link>
+                  <Link href="#" color="blue.100" _hover={{ color: "white" }}>
+                    Consulting
+                  </Link>
+                </VStack>
+              </VStack>
+              
+              {/* Contact Info */}
+              <VStack align="start" spacing={4}>
+                <Text fontSize="lg" fontWeight="bold" color="cyan.300">
+                  Contact Info
+                </Text>
+                <VStack align="start" spacing={3}>
+                  <HStack spacing={3}>
+                    <Icon as={FaMapMarkerAlt} color="cyan.400" />
+                    <Text color="blue.100" fontSize="sm">
+                      123 Innovation Drive, Tech City, TC 12345
+                    </Text>
+                  </HStack>
+                  <HStack spacing={3}>
+                    <Icon as={FaPhone} color="cyan.400" />
+                    <Text color="blue.100" fontSize="sm">
+                      +1 (555) 123-4567
+                    </Text>
+                  </HStack>
+                  <HStack spacing={3}>
+                    <Icon as={FaEnvelope} color="cyan.400" />
+                    <Text color="blue.100" fontSize="sm">
+                      contact@airobotics.com
+                    </Text>
+                  </HStack>
+                </VStack>
+              </VStack>
+            </SimpleGrid>
+            
+            <Divider borderColor="blue.600" />
+            
+            {/* Copyright */}
+            <Flex
+              direction={{ base: "column", md: "row" }}
+              justify="space-between"
+              align="center"
+              w="full"
+              gap={4}
+            >
+              <Text color="blue.200" fontSize="sm">
+                © 2024 AI Robotics. All rights reserved.
+              </Text>
+              <HStack spacing={6}>
+                <Link href="#" color="blue.200" fontSize="sm" _hover={{ color: "white" }}>
+                  Privacy Policy
+                </Link>
+                <Link href="#" color="blue.200" fontSize="sm" _hover={{ color: "white" }}>
+                  Terms of Service
+                </Link>
+                <Link href="#" color="blue.200" fontSize="sm" _hover={{ color: "white" }}>
+                  Cookie Policy
+                </Link>
+              </HStack>
+            </Flex>
+          </VStack>
+        </Container>
+      </Box>
     </Box>
   );
 };
