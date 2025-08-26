@@ -1,0 +1,147 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="hand_world">
+    
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Table surface -->
+    <model name="table">
+      <static>true</static>
+      <link name="table_link">
+        <pose>0 0 0.3 0 0 0</pose>
+        <collision name="table_collision">
+          <geometry>
+            <box>
+              <size>0.8 0.8 0.02</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="table_visual">
+          <geometry>
+            <box>
+              <size>0.8 0.8 0.02</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Small objects for grasping -->
+    <model name="ball1">
+      <pose>0.1 0.1 0.32 0 0 0</pose>
+      <link name="ball_link">
+        <collision name="ball_collision">
+          <geometry>
+            <sphere>
+              <radius>0.02</radius>
+            </sphere>
+          </geometry>
+        </collision>
+        <visual name="ball_visual">
+          <geometry>
+            <sphere>
+              <radius>0.02</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>1 0.5 0 1</ambient>
+            <diffuse>1 0.5 0 1</diffuse>
+          </material>
+        </visual>
+        <inertial>
+          <mass>0.05</mass>
+          <inertia>
+            <ixx>0.0001</ixx>
+            <iyy>0.0001</iyy>
+            <izz>0.0001</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+
+    <model name="ball2">
+      <pose>-0.1 0.05 0.32 0 0 0</pose>
+      <link name="ball_link">
+        <collision name="ball_collision">
+          <geometry>
+            <sphere>
+              <radius>0.015</radius>
+            </sphere>
+          </geometry>
+        </collision>
+        <visual name="ball_visual">
+          <geometry>
+            <sphere>
+              <radius>0.015</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0 0.8 1 1</ambient>
+            <diffuse>0 0.8 1 1</diffuse>
+          </material>
+        </visual>
+        <inertial>
+          <mass>0.03</mass>
+          <inertia>
+            <ixx>0.0001</ixx>
+            <iyy>0.0001</iyy>
+            <izz>0.0001</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+
+    <!-- Cylinder object -->
+    <model name="cylinder1">
+      <pose>0.05 -0.1 0.325 0 0 0</pose>
+      <link name="cylinder_link">
+        <collision name="cylinder_collision">
+          <geometry>
+            <cylinder>
+              <radius>0.015</radius>
+              <length>0.05</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="cylinder_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.015</radius>
+              <length>0.05</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.5 0 1 1</ambient>
+            <diffuse>0.5 0 1 1</diffuse>
+          </material>
+        </visual>
+        <inertial>
+          <mass>0.04</mass>
+          <inertia>
+            <ixx>0.0001</ixx>
+            <iyy>0.0001</iyy>
+            <izz>0.0001</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+
+    <!-- Physics settings -->
+    <physics type="ode">
+      <real_time_update_rate>1000</real_time_update_rate>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+    </physics>
+
+  </world>
+</sdf>
