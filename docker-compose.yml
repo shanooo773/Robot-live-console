@@ -16,9 +16,11 @@ services:
     environment:
       - DISPLAY=:1
       - VNC_PASSWORD=gazebo
+      - LIBGL_ALWAYS_SOFTWARE=1
+      - GALLIUM_DRIVER=llvmpipe
     restart: unless-stopped
     # Increase shared memory for GUI applications
-    shm_size: 512m
+    shm_size: 1g
     # Security options for GUI applications
     security_opt:
       - seccomp:unconfined
