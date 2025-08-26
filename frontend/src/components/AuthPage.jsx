@@ -111,150 +111,311 @@ const AuthPage = ({ onAuth, onBack }) => {
   };
 
   return (
-    <Container maxW="md" py={20}>
-      <VStack spacing={8}>
-        <VStack spacing={4} textAlign="center">
-          <Text fontSize="4xl">🤖</Text>
-          <Text fontSize="2xl" fontWeight="bold" color="white">
-            Welcome Back
-          </Text>
-          <Text color="gray.300">
-            Sign in to book your robot programming session
-          </Text>
-        </VStack>
+    <Box minH="100vh" position="relative">
+      {/* Enhanced background with subtle animation */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        bgGradient="gradient.dark"
+        opacity={0.9}
+        zIndex={-1}
+      />
+      
+      {/* Animated background elements */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        overflow="hidden"
+        zIndex={-1}
+      >
+        {[...Array(10)].map((_, i) => (
+          <Box
+            key={i}
+            position="absolute"
+            w="3px"
+            h="3px"
+            bg="robotics.primary"
+            borderRadius="full"
+            opacity={0.2}
+            animation={`float ${4 + i * 0.3}s ease-in-out infinite alternate`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${i * 0.3}s`,
+            }}
+          />
+        ))}
+      </Box>
 
-        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
-          <CardBody>
-            <Tabs variant="enclosed" colorScheme="blue">
-              <TabList>
-                <Tab color="gray.300" _selected={{ color: "white", bg: "blue.600" }}>
-                  Sign In
-                </Tab>
-                <Tab color="gray.300" _selected={{ color: "white", bg: "blue.600" }}>
-                  Sign Up
-                </Tab>
-              </TabList>
+      <Container maxW="md" py={20} position="relative" zIndex={1}>
+        <VStack spacing={10}>
+          {/* Enhanced header section */}
+          <VStack spacing={6} textAlign="center">
+            <Box position="relative">
+              <Text fontSize="6xl" mb={4}>🤖</Text>
+              <Box
+                position="absolute"
+                top="50%"
+                left="50%"
+                transform="translate(-50%, -50%)"
+                w="120px"
+                h="120px"
+                bgGradient="radial(circle, robotics.primary 0%, transparent 70%)"
+                opacity={0.2}
+                borderRadius="full"
+                animation="pulse 3s ease-in-out infinite"
+              />
+            </Box>
+            
+            <VStack spacing={3}>
+              <Text 
+                fontSize={{ base: "2xl", md: "3xl" }} 
+                fontWeight="bold" 
+                bgGradient="linear(to-r, white, robotics.primary)"
+                bgClip="text"
+              >
+                Welcome Back
+              </Text>
+              <Text 
+                color="gray.300" 
+                fontSize="lg"
+                maxW="sm"
+                lineHeight="tall"
+              >
+                Sign in to book your robot programming session and start your journey
+              </Text>
+            </VStack>
+          </VStack>
 
-              <TabPanels>
-                {/* Login Tab */}
-                <TabPanel px={0}>
-                  <form onSubmit={handleLogin}>
-                    <VStack spacing={4}>
-                      <FormControl>
-                        <FormLabel color="gray.300">Email</FormLabel>
-                        <Input
-                          type="email"
-                          placeholder="Enter your email"
-                          value={loginData.email}
-                          onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
-                        />
-                      </FormControl>
+          {/* Enhanced form card */}
+          <Card 
+            w="full" 
+            variant="gradient" 
+            border="2px solid"
+            borderColor="dark.border"
+            boxShadow="0 10px 40px rgba(0, 0, 0, 0.3)"
+          >
+            <CardBody p={8}>
+              <Tabs variant="enclosed" colorScheme="brand">
+                <TabList borderColor="dark.border" mb={6}>
+                  <Tab 
+                    color="gray.400" 
+                    fontSize="lg"
+                    fontWeight="semibold"
+                    _selected={{ 
+                      color: "white", 
+                      bg: "robotics.primary",
+                      borderColor: "robotics.primary",
+                      boxShadow: "0 0 20px rgba(0,212,255,0.3)"
+                    }}
+                    _hover={{
+                      color: "robotics.primary"
+                    }}
+                    transition="all 0.2s"
+                  >
+                    Sign In
+                  </Tab>
+                  <Tab 
+                    color="gray.400" 
+                    fontSize="lg"
+                    fontWeight="semibold"
+                    _selected={{ 
+                      color: "white", 
+                      bg: "robotics.primary",
+                      borderColor: "robotics.primary",
+                      boxShadow: "0 0 20px rgba(0,212,255,0.3)"
+                    }}
+                    _hover={{
+                      color: "robotics.primary"
+                    }}
+                    transition="all 0.2s"
+                  >
+                    Sign Up
+                  </Tab>
+                </TabList>
 
-                      <FormControl>
-                        <FormLabel color="gray.300">Password</FormLabel>
-                        <Input
-                          type="password"
-                          placeholder="Enter your password"
-                          value={loginData.password}
-                          onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
-                        />
-                      </FormControl>
+                <TabPanels>
+                  {/* Enhanced Login Tab */}
+                  <TabPanel px={0}>
+                    <form onSubmit={handleLogin}>
+                      <VStack spacing={6}>
+                        <FormControl>
+                          <FormLabel 
+                            color="gray.300" 
+                            fontSize="md" 
+                            fontWeight="semibold"
+                            mb={3}
+                          >
+                            Email Address
+                          </FormLabel>
+                          <Input
+                            type="email"
+                            placeholder="Enter your email"
+                            value={loginData.email}
+                            onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                            size="lg"
+                            borderRadius="lg"
+                            _focus={{
+                              borderColor: "robotics.primary",
+                              boxShadow: "0 0 0 3px rgba(0,212,255,0.1)"
+                            }}
+                          />
+                        </FormControl>
 
-                      <Button
-                        type="submit"
-                        colorScheme="blue"
-                        size="lg"
-                        w="full"
-                        isLoading={isLoading}
-                        loadingText="Signing in..."
-                      >
-                        Sign In
-                      </Button>
-                    </VStack>
-                  </form>
-                </TabPanel>
+                        <FormControl>
+                          <FormLabel 
+                            color="gray.300" 
+                            fontSize="md" 
+                            fontWeight="semibold"
+                            mb={3}
+                          >
+                            Password
+                          </FormLabel>
+                          <Input
+                            type="password"
+                            placeholder="Enter your password"
+                            value={loginData.password}
+                            onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                            size="lg"
+                            borderRadius="lg"
+                            _focus={{
+                              borderColor: "robotics.primary",
+                              boxShadow: "0 0 0 3px rgba(0,212,255,0.1)"
+                            }}
+                          />
+                        </FormControl>
 
-                {/* Register Tab */}
+                        <Button
+                          type="submit"
+                          variant="robotics"
+                          size="lg"
+                          w="full"
+                          py={6}
+                          h="auto"
+                          fontSize="lg"
+                          isLoading={isLoading}
+                          loadingText="Signing in..."
+                          leftIcon={<Text fontSize="xl">🔐</Text>}
+                        >
+                          Sign In
+                        </Button>
+                      </VStack>
+                    </form>
+                  </TabPanel>
+
+                {/* Enhanced Register Tab */}
                 <TabPanel px={0}>
                   <form onSubmit={handleRegister}>
-                    <VStack spacing={4}>
+                    <VStack spacing={6}>
                       <FormControl>
-                        <FormLabel color="gray.300">Full Name</FormLabel>
+                        <FormLabel 
+                          color="gray.300" 
+                          fontSize="md" 
+                          fontWeight="semibold"
+                          mb={3}
+                        >
+                          Full Name
+                        </FormLabel>
                         <Input
                           type="text"
                           placeholder="Enter your full name"
                           value={registerData.name}
                           onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          size="lg"
+                          borderRadius="lg"
+                          _focus={{
+                            borderColor: "robotics.primary",
+                            boxShadow: "0 0 0 3px rgba(0,212,255,0.1)"
+                          }}
                         />
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel color="gray.300">Email</FormLabel>
+                        <FormLabel 
+                          color="gray.300" 
+                          fontSize="md" 
+                          fontWeight="semibold"
+                          mb={3}
+                        >
+                          Email Address
+                        </FormLabel>
                         <Input
                           type="email"
                           placeholder="Enter your email"
                           value={registerData.email}
                           onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          size="lg"
+                          borderRadius="lg"
+                          _focus={{
+                            borderColor: "robotics.primary",
+                            boxShadow: "0 0 0 3px rgba(0,212,255,0.1)"
+                          }}
                         />
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel color="gray.300">Password</FormLabel>
+                        <FormLabel 
+                          color="gray.300" 
+                          fontSize="md" 
+                          fontWeight="semibold"
+                          mb={3}
+                        >
+                          Password
+                        </FormLabel>
                         <Input
                           type="password"
                           placeholder="Choose a password"
                           value={registerData.password}
                           onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          size="lg"
+                          borderRadius="lg"
+                          _focus={{
+                            borderColor: "robotics.primary",
+                            boxShadow: "0 0 0 3px rgba(0,212,255,0.1)"
+                          }}
                         />
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel color="gray.300">Confirm Password</FormLabel>
+                        <FormLabel 
+                          color="gray.300" 
+                          fontSize="md" 
+                          fontWeight="semibold"
+                          mb={3}
+                        >
+                          Confirm Password
+                        </FormLabel>
                         <Input
                           type="password"
                           placeholder="Confirm your password"
                           value={registerData.confirmPassword}
                           onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          size="lg"
+                          borderRadius="lg"
+                          _focus={{
+                            borderColor: "robotics.primary",
+                            boxShadow: "0 0 0 3px rgba(0,212,255,0.1)"
+                          }}
                         />
                       </FormControl>
 
                       <Button
                         type="submit"
-                        colorScheme="green"
+                        variant="gradient"
                         size="lg"
                         w="full"
+                        py={6}
+                        h="auto"
+                        fontSize="lg"
                         isLoading={isLoading}
                         loadingText="Creating account..."
+                        leftIcon={<Text fontSize="xl">✨</Text>}
                       >
                         Create Account
                       </Button>
@@ -266,18 +427,41 @@ const AuthPage = ({ onAuth, onBack }) => {
           </CardBody>
         </Card>
 
-        <Alert status="info" bg="blue.900" color="blue.100" border="1px solid" borderColor="blue.600">
-          <AlertIcon color="blue.300" />
-          <Text fontSize="sm">
-            This is a demo system. Use any email/password to test the functionality.
+        {/* Enhanced info alert */}
+        <Alert 
+          status="info" 
+          bg="rgba(0,212,255,0.1)" 
+          color="robotics.primary" 
+          border="1px solid" 
+          borderColor="robotics.primary"
+          borderRadius="lg"
+          boxShadow="0 0 20px rgba(0,212,255,0.1)"
+        >
+          <AlertIcon color="robotics.primary" />
+          <Text fontSize="sm" lineHeight="tall">
+            This is a demo system. Use any email/password to test the functionality and explore the robotics platform.
           </Text>
         </Alert>
 
-        <Button variant="ghost" onClick={onBack} color="gray.400">
-          ← Back to Home
+        {/* Enhanced back button */}
+        <Button 
+          variant="ghost" 
+          onClick={onBack} 
+          color="gray.400"
+          size="lg"
+          leftIcon={<Text fontSize="lg">←</Text>}
+          _hover={{
+            color: "robotics.primary",
+            bg: "whiteAlpha.100",
+            transform: "translateX(-4px)"
+          }}
+          transition="all 0.2s"
+        >
+          Back to Home
         </Button>
       </VStack>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 
