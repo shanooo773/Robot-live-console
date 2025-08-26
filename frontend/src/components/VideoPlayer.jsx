@@ -1,6 +1,23 @@
 import { useState, useEffect } from "react";
-import { Box, Button, Text, Spinner, Alert, AlertIcon } from "@chakra-ui/react";
+import { Box, Button, Text, Spinner, Alert, AlertIcon, Icon, keyframes } from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { FiPlay, FiRefreshCw, FiVideo } from "react-icons/fi";
 import { executeRobotCode } from "../api";
+
+const MotionBox = motion(Box);
+const MotionButton = motion(Button);
+
+// Animation keyframes
+const rotate = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const glow = keyframes`
+  0% { box-shadow: 0 0 20px rgba(67, 233, 123, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(67, 233, 123, 0.6); }
+  100% { box-shadow: 0 0 20px rgba(67, 233, 123, 0.3); }
+`;
 
 const VideoPlayer = ({ editorRef, robot, codeValue }) => {
   const [videoUrl, setVideoUrl] = useState("");
@@ -74,62 +91,95 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
   };
 
   return (
-    <Box w="100%">
-      <Text mb={2} fontSize="lg" color="white" fontWeight="bold">
-        Robot Simulation
-      </Text>
-      
-      <Button
-        colorScheme="green"
-        mb={4}
+    <MotionBox w="100%">
+      <MotionButton
+        variant="success"
+        mb={6}
         isLoading={isLoading}
         loadingText="Running Simulation..."
         onClick={runCode}
         size="lg"
         w="full"
+        borderRadius="xl"
+        leftIcon={<Icon as={isLoading ? FiRefreshCw : FiPlay} />}
+        animation={isLoading ? `${rotate} 1s linear infinite` : undefined}
+        _hover={{
+          animation: `${glow} 2s ease-in-out infinite`,
+        }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
       >
-        Run Code
-      </Button>
+        {isLoading ? "Running Simulation..." : "Run Code"}
+      </MotionButton>
 
       {isError && (
-        <Alert status="error" mb={4}>
-          <AlertIcon />
-          <Box>
-            <Text fontWeight="bold">Execution Failed</Text>
-            <Text fontSize="sm">{error}</Text>
-          </Box>
-        </Alert>
+        <MotionBox
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          mb={4}
+        >
+          <Alert 
+            status="error" 
+            borderRadius="xl"
+            bg="rgba(245, 87, 108, 0.1)"
+            border="1px solid rgba(245, 87, 108, 0.3)"
+          >
+            <AlertIcon color="red.300" />
+            <Box>
+              <Text fontWeight="bold" color="red.300">Execution Failed</Text>
+              <Text color="red.200">{error}</Text>
+            </Box>
+          </Alert>
+        </MotionBox>
       )}
 
       {isLoading && (
-        <Box
+        <MotionBox
           height="75vh"
           display="flex"
           flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          border="1px solid #333"
-          borderRadius="md"
-          bg="#1a1a1a"
+          borderRadius="xl"
+          bg="rgba(255, 255, 255, 0.02)"
+          border="1px solid rgba(255, 255, 255, 0.1)"
+          backdropFilter="blur(10px)"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          <Spinner size="xl" color="blue.400" mb={4} />
-          <Text color="gray.300" fontSize="lg" mb={2}>
+          <Spinner 
+            size="xl" 
+            color="blue.400" 
+            mb={6}
+            thickness="4px"
+          />
+          <Text color="gray.300" fontSize="lg" mb={3} fontWeight="medium">
             Running Robot Simulation...
           </Text>
           <Text color="gray.500" fontSize="sm" textAlign="center" maxW="md">
             Your code is being executed in the robot simulation environment.
             This may take a few moments.
           </Text>
-        </Box>
+        </MotionBox>
       )}
 
       {videoUrl && !isLoading && (
-        <Box
+        <MotionBox
           height="75vh"
-          border="1px solid #333"
-          borderRadius="md"
-          bg="#1a1a1a"
+          borderRadius="xl"
           overflow="hidden"
+          border="1px solid rgba(255, 255, 255, 0.1)"
+          bg="rgba(0, 0, 0, 0.5)"
+          backdropFilter="blur(10px)"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          whileHover={{ 
+            boxShadow: "0 15px 40px rgba(67, 233, 123, 0.2)",
+            transition: { duration: 0.3 }
+          }}
         >
           {videoLoadError ? (
             <Box
@@ -138,18 +188,28 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
               flexDirection="column"
               alignItems="center"
               justifyContent="center"
-              p={6}
+              p={8}
             >
-              <Text color="yellow.400" fontSize="lg" mb={2}>
-                ⚠️ Video Unavailable
+              <Icon as={FiVideo} color="red.300" boxSize={16} mb={4} />
+              <Text color="red.300" fontSize="lg" mb={2} fontWeight="bold">
+                Video Load Error
               </Text>
-              <Text color="gray.300" textAlign="center" mb={4}>
-                The simulation completed successfully, but the video couldn't be loaded.
-                This might be due to the simulation running in mock mode.
+              <Text color="gray.400" textAlign="center" maxW="md">
+                The simulation video could not be loaded. This might be due to network issues or the simulation is still processing.
               </Text>
-              <Text color="gray.400" fontSize="sm" textAlign="center">
-                Execution ID: {executionId}
-              </Text>
+              <Button
+                variant="glass"
+                mt={4}
+                onClick={() => {
+                  setVideoLoadError(false);
+                  // Force video reload by adding timestamp
+                  const timestamp = Date.now();
+                  setVideoUrl(`${videoUrl}?t=${timestamp}`);
+                }}
+                leftIcon={<Icon as={FiRefreshCw} />}
+              >
+                Retry
+              </Button>
             </Box>
           ) : (
             <video
@@ -157,34 +217,45 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
               height="100%"
               controls
               autoPlay
-              style={{ objectFit: "contain" }}
+              muted
               onError={handleVideoError}
-              onLoadStart={() => console.log('Video load started')}
-              onCanPlay={() => console.log('Video can play')}
+              style={{
+                objectFit: 'contain',
+                backgroundColor: '#000'
+              }}
             >
               <source src={videoUrl} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           )}
-        </Box>
+        </MotionBox>
       )}
 
       {!videoUrl && !isLoading && !isError && (
-        <Box
+        <MotionBox
           height="75vh"
           display="flex"
+          flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          border="1px solid #333"
-          borderRadius="md"
-          bg="#1a1a1a"
+          borderRadius="xl"
+          bg="rgba(255, 255, 255, 0.02)"
+          border="2px dashed rgba(255, 255, 255, 0.2)"
+          backdropFilter="blur(10px)"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          <Text color="gray.500" textAlign="center">
-            Select a robot and run your code to see the simulation
+          <Icon as={FiPlay} color="gray.400" boxSize={16} mb={4} />
+          <Text color="gray.300" fontSize="lg" mb={2} fontWeight="medium">
+            Ready for Simulation
           </Text>
-        </Box>
+          <Text color="gray.500" textAlign="center" maxW="md">
+            Click "Run Code" to execute your robot program and see the simulation results
+          </Text>
+        </MotionBox>
       )}
-    </Box>
+    </MotionBox>
   );
 };
 

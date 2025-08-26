@@ -17,8 +17,43 @@ import {
   Input,
   FormControl,
   FormLabel,
+  Icon,
+  keyframes,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { FiClock, FiCalendar, FiUser, FiCheck } from "react-icons/fi";
+
+const MotionBox = motion(Box);
+const MotionCard = motion(Card);
+const MotionVStack = motion(VStack);
+
+// Animation keyframes
+const pulse = keyframes`
+  0% { box-shadow: 0 0 0 0 rgba(67, 233, 123, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(67, 233, 123, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(67, 233, 123, 0); }
+`;
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
 
 // Dummy data for available time slots
 const generateTimeSlots = () => {
@@ -146,41 +181,73 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
 
   return (
     <Container maxW="7xl" py={8}>
-      <VStack spacing={8}>
-        {/* Header */}
-        <HStack w="full" justify="space-between">
-          <VStack align="start" spacing={1}>
-            <Text fontSize="3xl" fontWeight="bold" color="white">
-              Book Your Robot Session
-            </Text>
-            <HStack>
-              <Avatar size="sm" name={user.name} />
-              <Text color="gray.300">Welcome, {user.name}</Text>
-            </HStack>
-          </VStack>
-          <Button variant="ghost" onClick={onLogout} color="gray.400">
-            Logout
-          </Button>
-        </HStack>
+      <MotionVStack 
+        spacing={8}
+        initial="hidden"
+        animate="visible"
+        variants={staggerContainer}
+      >
+        {/* Enhanced Header */}
+        <MotionBox w="full" variants={fadeInUp}>
+          <HStack w="full" justify="space-between">
+            <VStack align="start" spacing={3}>
+              <Text 
+                fontSize={{ base: "2xl", md: "3xl" }} 
+                fontWeight="bold" 
+                bgGradient="linear(to-r, #43e97b, #38f9d7)"
+                bgClip="text"
+              >
+                Book Your Robot Session
+              </Text>
+              <HStack spacing={3}>
+                <Avatar 
+                  size="sm" 
+                  name={user.name} 
+                  bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                />
+                <VStack align="start" spacing={0}>
+                  <Text color="white" fontWeight="medium">Welcome, {user.name}</Text>
+                  <Text color="gray.400" fontSize="sm">Choose your programming session</Text>
+                </VStack>
+              </HStack>
+            </VStack>
+            <Button 
+              variant="glass" 
+              onClick={onLogout}
+              size="lg"
+            >
+              Logout
+            </Button>
+          </HStack>
+        </MotionBox>
 
-        {/* Filters */}
-        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
+        {/* Enhanced Filters */}
+        <MotionCard w="full" variant="floating" variants={fadeInUp}>
           <CardHeader>
-            <Text fontSize="lg" fontWeight="bold" color="white">
-              Filter Available Sessions
-            </Text>
+            <HStack>
+              <Icon as={FiCalendar} color="blue.300" boxSize={5} />
+              <Text 
+                fontSize="lg" 
+                fontWeight="bold" 
+                bgGradient="linear(to-r, #4facfe, #00f2fe)"
+                bgClip="text"
+              >
+                Filter Available Sessions
+              </Text>
+            </HStack>
           </CardHeader>
           <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
               <FormControl>
-                <FormLabel color="gray.300">Date</FormLabel>
+                <FormLabel color="gray.300" fontWeight="semibold">
+                  <Icon as={FiCalendar} mr={2} />
+                  Date
+                </FormLabel>
                 <Select
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  variant="glass"
+                  size="lg"
                 >
                   <option value="">All dates</option>
                   {getDateOptions().map(option => (
@@ -192,14 +259,15 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
               </FormControl>
 
               <FormControl>
-                <FormLabel color="gray.300">Robot Type</FormLabel>
+                <FormLabel color="gray.300" fontWeight="semibold">
+                  <Icon as={FiUser} mr={2} />
+                  Robot Type
+                </FormLabel>
                 <Select
                   value={selectedRobot}
                   onChange={(e) => setSelectedRobot(e.target.value)}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  variant="glass"
+                  size="lg"
                 >
                   <option value="">All robots</option>
                   <option value="turtlebot">🤖 TurtleBot3</option>
@@ -209,142 +277,231 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
               </FormControl>
             </SimpleGrid>
           </CardBody>
-        </Card>
+        </MotionCard>
 
-        {/* Available Slots */}
-        <VStack w="full" spacing={6}>
+        {/* Enhanced Available Slots */}
+        <MotionVStack w="full" spacing={6} variants={fadeInUp}>
           <HStack w="full" justify="space-between">
-            <Text fontSize="xl" fontWeight="bold" color="white">
-              Available Sessions ({availableSlots.length})
-            </Text>
-            <Badge colorScheme="green" px={3} py={1}>
+            <HStack>
+              <Icon as={FiCheck} color="green.300" boxSize={6} />
+              <Text 
+                fontSize="xl" 
+                fontWeight="bold" 
+                color="white"
+              >
+                Available Sessions ({availableSlots.length})
+              </Text>
+            </HStack>
+            <Badge 
+              variant="glass"
+              bg="rgba(67, 233, 123, 0.1)"
+              border="1px solid rgba(67, 233, 123, 0.3)"
+              color="green.300"
+              px={4} 
+              py={2}
+              borderRadius="full"
+              animation={`${pulse} 2s infinite`}
+            >
               {availableSlots.length} slots free
             </Badge>
           </HStack>
 
           {availableSlots.length === 0 ? (
-            <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
-              <CardBody textAlign="center" py={12}>
-                <Text fontSize="xl" color="gray.400" mb={2}>
+            <MotionCard 
+              w="full" 
+              variant="glass"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <CardBody textAlign="center" py={16}>
+                <Text fontSize="4xl" mb={4}>🤖</Text>
+                <Text fontSize="xl" color="gray.300" mb={2}>
                   No available slots found
                 </Text>
                 <Text color="gray.500">
                   Try adjusting your filters or check back later
                 </Text>
               </CardBody>
-            </Card>
+            </MotionCard>
           ) : (
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
-              {availableSlots.map((slot) => (
-                <Card
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} w="full">
+              {availableSlots.map((slot, index) => (
+                <MotionCard 
                   key={slot.id}
-                  bg="gray.800"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  _hover={{ borderColor: "green.400", transform: "translateY(-2px)" }}
-                  transition="all 0.2s"
+                  variant="floating"
+                  cursor="pointer"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  whileHover={{ 
+                    scale: 1.02,
+                    transition: { duration: 0.2 }
+                  }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <CardBody>
-                    <VStack spacing={3} align="start">
+                  <CardBody p={6}>
+                    <VStack spacing={4} align="start">
                       <HStack justify="space-between" w="full">
-                        <Badge colorScheme="green">Available</Badge>
+                        <Badge 
+                          variant="glass"
+                          bg="rgba(67, 233, 123, 0.1)"
+                          border="1px solid rgba(67, 233, 123, 0.3)"
+                          color="green.300"
+                          borderRadius="full"
+                        >
+                          <Icon as={FiCheck} mr={1} />
+                          Available
+                        </Badge>
                         <HStack>
-                          <Text fontSize="xl">{robotNames[slot.robotType].emoji}</Text>
-                          <Text fontSize="sm" color="gray.300">
+                          <Text fontSize="2xl">{robotNames[slot.robotType].emoji}</Text>
+                          <Text fontSize="sm" color="gray.300" fontWeight="medium">
                             {robotNames[slot.robotType].name}
                           </Text>
                         </HStack>
                       </HStack>
                       
-                      <VStack align="start" spacing={1}>
-                        <Text color="white" fontWeight="bold">
-                          {new Date(slot.date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </Text>
-                        <Text color="gray.300" fontSize="lg">
-                          {slot.startTime} - {slot.endTime}
-                        </Text>
+                      <VStack align="start" spacing={2} w="full">
+                        <HStack color="white">
+                          <Icon as={FiCalendar} color="blue.300" />
+                          <Text fontWeight="bold">
+                            {new Date(slot.date).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </Text>
+                        </HStack>
+                        <HStack color="gray.300">
+                          <Icon as={FiClock} color="purple.300" />
+                          <Text fontSize="lg" fontWeight="medium">
+                            {slot.startTime} - {slot.endTime}
+                          </Text>
+                        </HStack>
                       </VStack>
 
                       <Button
-                        colorScheme="green"
+                        variant="success"
                         w="full"
+                        size="lg"
                         onClick={() => handleBookSlot(slot)}
                         isLoading={isLoading}
                         loadingText="Booking..."
+                        borderRadius="xl"
                       >
                         Book This Session
                       </Button>
                     </VStack>
                   </CardBody>
-                </Card>
+                </MotionCard>
               ))}
             </SimpleGrid>
           )}
-        </VStack>
+        </MotionVStack>
 
-        {/* Booked Slots (for reference) */}
+        {/* Enhanced Unavailable Sessions */}
         {bookedSlots.length > 0 && (
-          <VStack w="full" spacing={6}>
-            <Divider borderColor="gray.600" />
+          <MotionVStack w="full" spacing={6} variants={fadeInUp}>
+            <Box w="full">
+              <Divider 
+                borderColor="rgba(255, 255, 255, 0.1)" 
+                borderWidth="1px"
+                background="linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)"
+              />
+            </Box>
             
             <HStack w="full" justify="space-between">
-              <Text fontSize="xl" fontWeight="bold" color="white">
-                Unavailable Sessions
-              </Text>
-              <Badge colorScheme="red" px={3} py={1}>
+              <HStack>
+                <Icon as={FiClock} color="red.300" boxSize={6} />
+                <Text fontSize="xl" fontWeight="bold" color="white">
+                  Unavailable Sessions
+                </Text>
+              </HStack>
+              <Badge 
+                variant="glass"
+                bg="rgba(245, 87, 108, 0.1)"
+                border="1px solid rgba(245, 87, 108, 0.3)"
+                color="red.300"
+                px={4} 
+                py={2}
+                borderRadius="full"
+              >
                 {bookedSlots.length} slots taken
               </Badge>
             </HStack>
 
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
-              {bookedSlots.slice(0, 6).map((slot) => (
-                <Card
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} w="full">
+              {bookedSlots.slice(0, 6).map((slot, index) => (
+                <MotionCard
                   key={slot.id}
-                  bg="gray.900"
-                  border="1px solid"
-                  borderColor="gray.700"
-                  opacity={0.7}
+                  variant="glass"
+                  opacity={0.6}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 0.6, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  position="relative"
+                  overflow="hidden"
+                  _before={{
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bg: 'linear-gradient(45deg, transparent 49%, rgba(245, 87, 108, 0.1) 50%, transparent 51%)',
+                    pointerEvents: 'none',
+                  }}
                 >
-                  <CardBody>
-                    <VStack spacing={3} align="start">
+                  <CardBody p={6}>
+                    <VStack spacing={4} align="start">
                       <HStack justify="space-between" w="full">
-                        <Badge colorScheme="red">Taken</Badge>
+                        <Badge 
+                          variant="glass"
+                          bg="rgba(245, 87, 108, 0.1)"
+                          border="1px solid rgba(245, 87, 108, 0.3)"
+                          color="red.300"
+                          borderRadius="full"
+                        >
+                          Taken
+                        </Badge>
                         <HStack>
-                          <Text fontSize="xl">{robotNames[slot.robotType].emoji}</Text>
-                          <Text fontSize="sm" color="gray.400">
+                          <Text fontSize="2xl">{robotNames[slot.robotType].emoji}</Text>
+                          <Text fontSize="sm" color="gray.400" fontWeight="medium">
                             {robotNames[slot.robotType].name}
                           </Text>
                         </HStack>
                       </HStack>
                       
-                      <VStack align="start" spacing={1}>
-                        <Text color="gray.300">
-                          {new Date(slot.date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </Text>
-                        <Text color="gray.400">
-                          {slot.startTime} - {slot.endTime}
-                        </Text>
+                      <VStack align="start" spacing={2} w="full">
+                        <HStack color="gray.300">
+                          <Icon as={FiCalendar} color="gray.500" />
+                          <Text>
+                            {new Date(slot.date).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </Text>
+                        </HStack>
+                        <HStack color="gray.400">
+                          <Icon as={FiClock} color="gray.500" />
+                          <Text>
+                            {slot.startTime} - {slot.endTime}
+                          </Text>
+                        </HStack>
                       </VStack>
 
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color="gray.500" fontStyle="italic">
                         Booked by {slot.bookedBy}
                       </Text>
                     </VStack>
                   </CardBody>
-                </Card>
+                </MotionCard>
               ))}
             </SimpleGrid>
-          </VStack>
+          </MotionVStack>
         )}
-      </VStack>
+      </MotionVStack>
     </Container>
   );
 };
