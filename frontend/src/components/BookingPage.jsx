@@ -19,6 +19,7 @@ import {
   FormLabel,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
+import { createBooking, getUserBookings, getBookingSchedule } from "../api";
 
 // Dummy data for available time slots
 const generateTimeSlots = () => {
@@ -69,11 +70,13 @@ const robotNames = {
   hand: { name: "Dexterous Hand Control", emoji: "🤲" },
 };
 
-const BookingPage = ({ user, onBooking, onLogout }) => {
+const BookingPage = ({ user, authToken, onBooking, onLogout, onAdminAccess }) => {
   const [timeSlots, setTimeSlots] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedRobot, setSelectedRobot] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userBookings, setUserBookings] = useState([]);
   const toast = useToast();
 
   useEffect(() => {
@@ -84,36 +87,87 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     setSelectedDate(today);
-  }, []);
+    
+    // Load user bookings and booked slots
+    loadBookings();
+  }, [authToken]);
+
+  const loadBookings = async () => {
+    try {
+      if (authToken) {
+        // Get user's bookings
+        const bookings = await getUserBookings(authToken);
+        setUserBookings(bookings);
+        
+        // Get booking schedule for the next 7 days
+        const today = new Date();
+        const endDate = new Date(today);
+        endDate.setDate(today.getDate() + 7);
+        
+        const schedule = await getBookingSchedule(
+          today.toISOString().split('T')[0],
+          endDate.toISOString().split('T')[0]
+        );
+        setBookedSlots(schedule.bookings || []);
+      }
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+    }
+  };
 
   const filteredSlots = timeSlots.filter(slot => {
     let matches = true;
     if (selectedDate && slot.date !== selectedDate) matches = false;
     if (selectedRobot && slot.robotType !== selectedRobot) matches = false;
+    
+    // Check if slot is already booked
+    const isBooked = bookedSlots.some(booked => 
+      booked.date === slot.date &&
+      booked.start_time === slot.startTime &&
+      booked.end_time === slot.endTime &&
+      booked.robot_type === slot.robotType
+    );
+    
+    slot.available = !isBooked;
+    if (isBooked) {
+      const booking = bookedSlots.find(booked => 
+        booked.date === slot.date &&
+        booked.start_time === slot.startTime &&
+        booked.end_time === slot.endTime &&
+        booked.robot_type === slot.robotType
+      );
+      slot.bookedBy = booking.user_name;
+    }
+    
     return matches;
   });
 
   const availableSlots = filteredSlots.filter(slot => slot.available);
-  const bookedSlots = filteredSlots.filter(slot => !slot.available);
+  const unavailableSlots = filteredSlots.filter(slot => !slot.available);
 
   const handleBookSlot = async (slot) => {
     setIsLoading(true);
     
-    // Simulate booking API call
-    setTimeout(() => {
-      const bookedSlot = {
-        ...slot,
-        available: false,
-        bookedBy: user.name,
-        bookingTime: new Date().toISOString(),
+    try {
+      const bookingData = {
+        robot_type: slot.robotType,
+        date: slot.date,
+        start_time: slot.startTime,
+        end_time: slot.endTime
       };
       
-      // Update the slot status
-      setTimeSlots(prev => prev.map(s => 
-        s.id === slot.id ? bookedSlot : s
-      ));
+      const booking = await createBooking(bookingData, authToken);
       
-      onBooking(bookedSlot);
+      // Update local state
+      await loadBookings();
+      
+      onBooking({
+        ...slot,
+        bookingId: booking.id,
+        available: false,
+        bookedBy: user.name,
+        bookingTime: booking.created_at,
+      });
       
       toast({
         title: "Development session booked!",
@@ -123,8 +177,18 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
         isClosable: true,
       });
       
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast({
+        title: "Booking failed",
+        description: error.response?.data?.detail || "Failed to book session. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const getDateOptions = () => {
@@ -156,11 +220,21 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
             <HStack>
               <Avatar size="sm" name={user.name} />
               <Text color="gray.300">Welcome, {user.name}</Text>
+              {user.role === 'admin' && (
+                <Badge colorScheme="purple" ml={2}>Admin</Badge>
+              )}
             </HStack>
           </VStack>
-          <Button variant="ghost" onClick={onLogout} color="gray.400">
-            Logout
-          </Button>
+          <HStack spacing={3}>
+            {onAdminAccess && user.role === 'admin' && (
+              <Button colorScheme="purple" onClick={onAdminAccess}>
+                Admin Dashboard
+              </Button>
+            )}
+            <Button variant="ghost" onClick={onLogout} color="gray.400">
+              Logout
+            </Button>
+          </HStack>
         </HStack>
 
         {/* Filters */}
@@ -286,8 +360,80 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
           )}
         </VStack>
 
+        {/* User's Current Bookings */}
+        {userBookings.length > 0 && (
+          <VStack w="full" spacing={6}>
+            <Divider borderColor="gray.600" />
+            
+            <HStack w="full" justify="space-between">
+              <Text fontSize="xl" fontWeight="bold" color="white">
+                Your Booked Sessions
+              </Text>
+              <Badge colorScheme="green" px={3} py={1}>
+                {userBookings.length} active booking{userBookings.length !== 1 ? 's' : ''}
+              </Badge>
+            </HStack>
+
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
+              {userBookings.map((booking) => (
+                <Card
+                  key={booking.id}
+                  bg="green.900"
+                  border="1px solid"
+                  borderColor="green.600"
+                >
+                  <CardBody>
+                    <VStack spacing={3} align="start">
+                      <HStack justify="space-between" w="full">
+                        <Badge colorScheme="green">Your Booking</Badge>
+                        <HStack>
+                          <Text fontSize="xl">{robotNames[booking.robot_type].emoji}</Text>
+                          <Text fontSize="sm" color="green.100">
+                            {robotNames[booking.robot_type].name}
+                          </Text>
+                        </HStack>
+                      </HStack>
+                      
+                      <VStack align="start" spacing={1}>
+                        <Text color="green.100" fontWeight="bold">
+                          {new Date(booking.date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </Text>
+                        <Text color="green.200" fontSize="lg">
+                          {booking.start_time} - {booking.end_time}
+                        </Text>
+                      </VStack>
+
+                      <Button
+                        colorScheme="green"
+                        size="sm"
+                        w="full"
+                        onClick={() => onBooking({
+                          id: `booking_${booking.id}`,
+                          robotType: booking.robot_type,
+                          date: booking.date,
+                          startTime: booking.start_time,
+                          endTime: booking.end_time,
+                          bookingId: booking.id,
+                          available: false,
+                          bookedBy: user.name
+                        })}
+                      >
+                        Enter Development Console
+                      </Button>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              ))}
+            </SimpleGrid>
+          </VStack>
+        )}
+
         {/* Booked Slots (for reference) */}
-        {bookedSlots.length > 0 && (
+        {unavailableSlots.length > 0 && (
           <VStack w="full" spacing={6}>
             <Divider borderColor="gray.600" />
             
@@ -296,12 +442,12 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
                 Unavailable Sessions
               </Text>
               <Badge colorScheme="red" px={3} py={1}>
-                {bookedSlots.length} slots taken
+                {unavailableSlots.length} slots taken
               </Badge>
             </HStack>
 
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
-              {bookedSlots.slice(0, 6).map((slot) => (
+              {unavailableSlots.slice(0, 6).map((slot) => (
                 <Card
                   key={slot.id}
                   bg="gray.900"
