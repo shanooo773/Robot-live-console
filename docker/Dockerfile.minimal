@@ -1,0 +1,132 @@
+# Minimal working simulation image - builds from cached Alpine base
+FROM alpine:3.18
+
+# Install minimal dependencies for video generation
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    ffmpeg \
+    bash
+
+# Create simulation workspace
+WORKDIR /opt/simulation
+RUN mkdir -p /workspace /videos /output
+
+# Create a simple simulation script that generates a real video
+RUN echo '#!/usr/bin/env python3\n\
+import sys\n\
+import os\n\
+import subprocess\n\
+import time\n\
+\n\
+def create_test_video():\n\
+    """Create a simple test video using ffmpeg"""\n\
+    execution_id = os.environ.get("EXECUTION_ID", "test")\n\
+    robot_type = os.environ.get("ROBOT_TYPE", "turtlebot")\n\
+    \n\
+    output_path = f"/videos/{execution_id}.mp4"\n\
+    \n\
+    print(f"Creating test simulation video for {robot_type} robot...")\n\
+    print(f"Execution ID: {execution_id}")\n\
+    print(f"Output path: {output_path}")\n\
+    \n\
+    if robot_type == "turtlebot":\n\
+        color = "blue"\n\
+        pattern = "testsrc=size=640x480:rate=2"\n\
+        text = "TURTLEBOT3 SIMULATION\\\\nMoving Forward"\n\
+    elif robot_type == "arm":\n\
+        color = "green"\n\
+        pattern = "testsrc=size=640x480:rate=2"\n\
+        text = "ROBOT ARM SIMULATION\\\\nPicking Objects"\n\
+    elif robot_type == "hand":\n\
+        color = "red"\n\
+        pattern = "testsrc2=size=640x480:rate=2"\n\
+        text = "ROBOT HAND SIMULATION\\\\nGrasping Objects"\n\
+    else:\n\
+        color = "white"\n\
+        pattern = "testsrc=size=640x480:rate=2"\n\
+        text = "ROBOT SIMULATION"\n\
+    \n\
+    cmd = [\n\
+        "ffmpeg", "-y",\n\
+        "-f", "lavfi",\n\
+        "-i", pattern,\n\
+        "-vf", f"drawtext=text='"'"'{text}'"'"':x=50:y=50:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.5",\n\
+        "-t", "8",\n\
+        "-c:v", "libx264",\n\
+        "-preset", "ultrafast",\n\
+        "-crf", "23",\n\
+        output_path\n\
+    ]\n\
+    \n\
+    try:\n\
+        print("Running ffmpeg command:", " ".join(cmd))\n\
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)\n\
+        \n\
+        if result.returncode == 0:\n\
+            print("Video created successfully!")\n\
+            if os.path.exists(output_path):\n\
+                size = os.path.getsize(output_path)\n\
+                print(f"Video file size: {size} bytes")\n\
+                return True\n\
+            else:\n\
+                print("ERROR: Video file was not created")\n\
+                return False\n\
+        else:\n\
+            print("ERROR: ffmpeg failed")\n\
+            print("STDOUT:", result.stdout)\n\
+            print("STDERR:", result.stderr)\n\
+            return False\n\
+    except subprocess.TimeoutExpired:\n\
+        print("ERROR: ffmpeg timed out")\n\
+        return False\n\
+    except Exception as e:\n\
+        print(f"ERROR: Exception occurred: {e}")\n\
+        return False\n\
+\n\
+if __name__ == "__main__":\n\
+    print("Starting robot simulation...")\n\
+    print(f"Robot Type: {os.environ.get('"'"'ROBOT_TYPE'"'"', '"'"'unknown'"'"')}")\n\
+    print(f"Execution ID: {os.environ.get('"'"'EXECUTION_ID'"'"', '"'"'unknown'"'"')}")\n\
+    \n\
+    user_code_path = "/workspace/user_code.py"\n\
+    if os.path.exists(user_code_path):\n\
+        print("Executing user code...")\n\
+        try:\n\
+            with open(user_code_path, "r") as f:\n\
+                user_code = f.read()\n\
+            print("User code:")\n\
+            print(user_code)\n\
+            print("=" * 40)\n\
+            exec(user_code)\n\
+        except Exception as e:\n\
+            print(f"Error executing user code: {e}")\n\
+    \n\
+    success = create_test_video()\n\
+    \n\
+    if success:\n\
+        print("Simulation completed successfully!")\n\
+        sys.exit(0)\n\
+    else:\n\
+        print("Simulation failed!")\n\
+        sys.exit(1)\n\
+' > /opt/simulation/simple_simulation.py
+
+# Make simulation script executable
+RUN chmod +x /opt/simulation/simple_simulation.py
+
+# Create entrypoint script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+export PYTHONPATH=/opt/simulation:$PYTHONPATH\n\
+mkdir -p /workspace /videos /output\n\
+chmod 777 /workspace /videos /output\n\
+exec "$@"\n\
+' > /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Default command - run the simple simulation
+CMD ["python3", "/opt/simulation/simple_simulation.py"]

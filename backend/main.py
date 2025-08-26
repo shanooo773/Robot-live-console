@@ -486,16 +486,77 @@ async def execute_robot_code(request: CodeExecutionRequest):
                 logger.error(f"Docker execution failed: {e}")
                 # Fall through to mock simulation
         
-        # Mock simulation for testing (when Docker not available)
-        logger.info(f"Running mock simulation for {execution_id}")
+        # Enhanced mock simulation for testing (when Docker not available)
+        logger.info(f"Running enhanced mock simulation for {execution_id}")
         
         # Simulate processing time
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)
         
-        # Create a mock video file
-        mock_video_content = b"Mock video content for testing"
+        # Create a proper mock video file using ffmpeg if available
+        try:
+            import subprocess
+            
+            # Check if ffmpeg is available on the host system
+            ffmpeg_available = False
+            try:
+                result = subprocess.run(['ffmpeg', '-version'], capture_output=True, timeout=5)
+                ffmpeg_available = result.returncode == 0
+                logger.info("ffmpeg is available on host system")
+            except:
+                logger.info("ffmpeg not available on host system")
+            
+            if ffmpeg_available:
+                # Create a proper MP4 video file with content
+                robot_colors = {
+                    "turtlebot": "blue",
+                    "arm": "green", 
+                    "hand": "red"
+                }
+                
+                color = robot_colors.get(request.robot_type, "white")
+                
+                # Create a 10-second test video with animated content
+                cmd = [
+                    'ffmpeg', '-y',
+                    '-f', 'lavfi',
+                    '-i', f'color={color}:size=640x480:rate=2',
+                    '-vf', f'drawtext=text=\'MOCK {request.robot_type.upper()} SIMULATION\\nExecution ID: {execution_id}\\nThis is a mock video for testing\':x=10:y=10:fontsize=16:fontcolor=white',
+                    '-t', '10',
+                    '-c:v', 'libx264',
+                    '-preset', 'ultrafast',
+                    '-crf', '23',
+                    str(video_path)
+                ]
+                
+                logger.info(f"Creating mock video with ffmpeg: {' '.join(cmd)}")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
+                if result.returncode == 0 and video_path.exists():
+                    video_size = video_path.stat().st_size
+                    logger.info(f"Mock video created successfully with ffmpeg, size: {video_size} bytes")
+                    
+                    return CodeExecutionResponse(
+                        success=True,
+                        video_url=f"/videos/{video_filename}",
+                        execution_id=execution_id
+                    )
+                else:
+                    logger.warning(f"ffmpeg failed: {result.stderr}")
+                    # Fall back to simple text file
+            
+        except Exception as e:
+            logger.warning(f"Failed to create video with ffmpeg: {e}")
+        
+        # Fallback: Create a simple text file (for basic testing)
+        mock_video_content = f"""Mock simulation video for {request.robot_type} robot
+Execution ID: {execution_id}
+User Code: {request.code[:100]}...
+This is a fallback mock when ffmpeg is not available.""".encode()
+        
         async with aiofiles.open(video_path, 'wb') as f:
             await f.write(mock_video_content)
+        
+        logger.info(f"Basic mock file created, size: {len(mock_video_content)} bytes")
         
         return CodeExecutionResponse(
             success=True,

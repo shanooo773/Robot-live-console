@@ -17,6 +17,7 @@ import { Editor } from "@monaco-editor/react";
 import RobotSelector from "./RobotSelector";
 import { ROBOT_CODE_SNIPPETS } from "../constants";
 import VideoPlayer from "./VideoPlayer";
+import DebugPanel from "./DebugPanel";
 
 const robotNames = {
   turtlebot: { name: "TurtleBot3", emoji: "🤖" },
@@ -127,6 +128,9 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
             </HStack>
           </CardBody>
         </Card>
+
+        {/* Debug Panel */}
+        <DebugPanel />
       </VStack>
     </Container>
   );
