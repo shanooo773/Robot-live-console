@@ -27,7 +27,7 @@ function App() {
   };
 
   return (
-    <Box minH="100vh" bg="#0f0a19" color="gray.500">
+    <Box minH="100vh" bg="gradient.dark" color="gray.100">
       {currentPage === "landing" && (
         <LandingPage onGetStarted={() => setCurrentPage("auth")} />
       )}
