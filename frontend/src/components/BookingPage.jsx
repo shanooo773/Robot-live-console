@@ -20,6 +20,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { createBooking, getUserBookings, getBookingSchedule } from "../api";
+import ServiceStatus from "./ServiceStatus";
 
 // Dummy data for available time slots
 const generateTimeSlots = () => {
@@ -236,6 +237,11 @@ const BookingPage = ({ user, authToken, onBooking, onLogout, onAdminAccess }) =>
             </Button>
           </HStack>
         </HStack>
+
+        {/* Service Status */}
+        <Box w="full">
+          <ServiceStatus showDetails={false} />
+        </Box>
 
         {/* Filters */}
         <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
