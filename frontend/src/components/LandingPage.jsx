@@ -115,11 +115,11 @@ const LandingPage = ({ onGetStarted }) => {
                     lineHeight="1.1"
                     textShadow="0 4px 20px rgba(0, 0, 0, 0.3)"
                   >
-                    Bring Force of{" "}
+                    Book Your{" "}
                     <Text as="span" color="cyan.300">
-                      Artificial Intelligence
+                      Robot Development
                     </Text>{" "}
-                    To Business
+                    Console Session
                   </Text>
                   
                   <Text
@@ -128,9 +128,9 @@ const LandingPage = ({ onGetStarted }) => {
                     maxW="2xl"
                     lineHeight="1.6"
                   >
-                    Transform your business operations with cutting-edge AI and robotics solutions. 
-                    Enhance productivity, reduce costs, and stay ahead of the competition with our 
-                    intelligent automation platform.
+                    Reserve dedicated time slots to code, test, and simulate robotics projects. 
+                    Access professional development environments with ROS, Gazebo, and real-time 
+                    video feedback for TurtleBot, Robot Arms, and Manipulation systems.
                   </Text>
                 </VStack>
                 
@@ -150,8 +150,9 @@ const LandingPage = ({ onGetStarted }) => {
                       transform: "translateY(-2px)",
                     }}
                     leftIcon={<FaArrowRight />}
+                    onClick={onGetStarted}
                   >
-                    Read More
+                    Book Development Session
                   </Button>
                   
                   <Button
@@ -169,7 +170,7 @@ const LandingPage = ({ onGetStarted }) => {
                     }}
                     leftIcon={<FaPhone />}
                   >
-                    Contact Us
+                    View Available Slots
                   </Button>
                 </HStack>
               </VStack>
@@ -267,9 +268,9 @@ const LandingPage = ({ onGetStarted }) => {
                 color="blue.900"
                 lineHeight="1.2"
               >
-                Empowering People By{" "}
+                Dedicated Development{" "}
                 <Text as="span" color="cyan.500">
-                  Keeping Them Well
+                  Environments
                 </Text>
               </Text>
               
@@ -279,9 +280,9 @@ const LandingPage = ({ onGetStarted }) => {
                 lineHeight="1.6"
                 maxW="xl"
               >
-                Our AI-powered solutions are designed to enhance human capabilities, 
-                improve workplace safety, and create more efficient business processes 
-                that benefit everyone.
+                Access professional-grade robotics development environments through our 
+                time-slot booking system. Code, test, and iterate on your robot projects 
+                with dedicated computing resources and simulation capabilities.
               </Text>
             </VStack>
             
@@ -304,10 +305,10 @@ const LandingPage = ({ onGetStarted }) => {
                   <Icon as={FaUsers} fontSize="3xl" color="cyan.500" mb={3} />
                   <Stat>
                     <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
-                      500K+
+                      24/7
                     </StatNumber>
                     <StatLabel color="gray.600" fontSize="sm">
-                      Users Empowered
+                      Console Access
                     </StatLabel>
                   </Stat>
                 </CardBody>
@@ -330,10 +331,10 @@ const LandingPage = ({ onGetStarted }) => {
                   <Icon as={FaAward} fontSize="3xl" color="cyan.500" mb={3} />
                   <Stat>
                     <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
-                      99.8%
+                      3
                     </StatNumber>
                     <StatLabel color="gray.600" fontSize="sm">
-                      Success Rate
+                      Robot Types
                     </StatLabel>
                   </Stat>
                 </CardBody>
@@ -356,10 +357,10 @@ const LandingPage = ({ onGetStarted }) => {
                   <Icon as={FaGlobe} fontSize="3xl" color="cyan.500" mb={3} />
                   <Stat>
                     <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
-                      120+
+                      ROS+Gazebo
                     </StatNumber>
                     <StatLabel color="gray.600" fontSize="sm">
-                      Countries
+                      Simulation Ready
                     </StatLabel>
                   </Stat>
                 </CardBody>
@@ -382,10 +383,10 @@ const LandingPage = ({ onGetStarted }) => {
                   <Icon as={FaShieldAlt} fontSize="3xl" color="cyan.500" mb={3} />
                   <Stat>
                     <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
-                      24/7
+                      Real-time
                     </StatNumber>
                     <StatLabel color="gray.600" fontSize="sm">
-                      Support
+                      Video Feedback
                     </StatLabel>
                   </Stat>
                 </CardBody>
@@ -407,9 +408,9 @@ const LandingPage = ({ onGetStarted }) => {
                 lineHeight="1.2"
                 maxW="4xl"
               >
-                Our Purpose Is To Deliver Excellence in{" "}
+                Professional Development{" "}
                 <Text as="span" color="cyan.500">
-                  Service and Execution
+                  Console Features
                 </Text>
               </Text>
               <Text
@@ -418,7 +419,7 @@ const LandingPage = ({ onGetStarted }) => {
                 maxW="2xl"
                 lineHeight="1.6"
               >
-                We provide comprehensive AI and robotics solutions tailored to your business needs
+                Book time slots and access dedicated robotics development environments with all the tools you need
               </Text>
             </VStack>
             
@@ -454,11 +455,11 @@ const LandingPage = ({ onGetStarted }) => {
                   </Box>
                   
                   <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
-                    Robotic Automation
+                    Code Editor Console
                   </Text>
                   
                   <Text color="gray.600" lineHeight="1.6" mb={6}>
-                    Streamline your operations with intelligent robotic systems that handle repetitive tasks with precision and reliability.
+                    Professional Monaco editor with Python syntax highlighting, autocomplete, and ROS library support for robotics development.
                   </Text>
                   
                   <Button
@@ -504,11 +505,11 @@ const LandingPage = ({ onGetStarted }) => {
                   </Box>
                   
                   <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
-                    Machine Learning
+                    Gazebo Simulation
                   </Text>
                   
                   <Text color="gray.600" lineHeight="1.6" mb={6}>
-                    Harness the power of AI to analyze data, predict trends, and make intelligent decisions for your business.
+                    Test your robot code in realistic 3D environments with physics simulation and real-time video feedback of your robot's behavior.
                   </Text>
                   
                   <Button
@@ -554,11 +555,11 @@ const LandingPage = ({ onGetStarted }) => {
                   </Box>
                   
                   <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
-                    Education & Science
+                    Time Slot Booking
                   </Text>
                   
                   <Text color="gray.600" lineHeight="1.6" mb={6}>
-                    Advanced educational tools and scientific research platforms powered by cutting-edge AI and robotics technology.
+                    Reserve dedicated development sessions with guaranteed access to computing resources and simulation environments.
                   </Text>
                   
                   <Button
@@ -604,11 +605,11 @@ const LandingPage = ({ onGetStarted }) => {
                   </Box>
                   
                   <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
-                    Predictive Analysis
+                    Multi-Robot Support
                   </Text>
                   
                   <Text color="gray.600" lineHeight="1.6" mb={6}>
-                    Anticipate market trends and business opportunities with our advanced predictive analytics and forecasting models.
+                    Work with TurtleBot navigation, robot arm manipulation, and dexterous hand control in separate booked development sessions.
                   </Text>
                   
                   <Button
@@ -723,9 +724,9 @@ const LandingPage = ({ onGetStarted }) => {
                   lineHeight="1.2"
                   maxW="3xl"
                 >
-                  Get Closer Look How Business{" "}
+                  Complete Development{" "}
                   <Text as="span" color="cyan.300">
-                    Develop in AI Data Analysis
+                    Workflow in Your Browser
                   </Text>
                 </Text>
                 
@@ -735,10 +736,9 @@ const LandingPage = ({ onGetStarted }) => {
                   lineHeight="1.6"
                   maxW="2xl"
                 >
-                  Discover how artificial intelligence and advanced data analytics are transforming 
-                  modern businesses. Our comprehensive solutions provide real-time insights, 
-                  predictive modeling, and automated decision-making capabilities that drive growth 
-                  and innovation.
+                  Book your time slot, access the code editor, write ROS Python code, and see your robot 
+                  come to life in Gazebo simulation. Complete robotics development workflow with 
+                  real-time feedback and video output of your simulation results.
                 </Text>
               </VStack>
               
@@ -759,7 +759,7 @@ const LandingPage = ({ onGetStarted }) => {
                 leftIcon={<FaPlay />}
                 onClick={onGetStarted}
               >
-                Get Started Today
+                Start Development Session
               </Button>
             </VStack>
           </HStack>
@@ -776,9 +776,9 @@ const LandingPage = ({ onGetStarted }) => {
               color="blue.900"
               lineHeight="1.2"
             >
-              Explore Our{" "}
+              Development{" "}
               <Text as="span" color="cyan.500">
-                Case Studies
+                Success Stories
               </Text>
             </Text>
             <Text
@@ -787,7 +787,7 @@ const LandingPage = ({ onGetStarted }) => {
               maxW="2xl"
               lineHeight="1.6"
             >
-              Real-world success stories showcasing the transformative power of AI and robotics
+              See how developers are using our console booking system to build amazing robotics projects
             </Text>
           </VStack>
           
@@ -837,10 +837,10 @@ const LandingPage = ({ onGetStarted }) => {
               </Box>
               <CardBody p={6}>
                 <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
-                  Manufacturing Automation Success
+                  TurtleBot Navigation Project
                 </Text>
                 <Text color="gray.600" lineHeight="1.6">
-                  How we helped a leading manufacturer increase productivity by 300% through intelligent robotic automation systems.
+                  Student developed autonomous navigation algorithm in weekly 2-hour booked sessions, iterating through code and Gazebo simulations.
                 </Text>
               </CardBody>
             </Card>
@@ -890,10 +890,10 @@ const LandingPage = ({ onGetStarted }) => {
               </Box>
               <CardBody p={6}>
                 <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
-                  Healthcare AI Revolution
+                  Robot Arm Pick & Place
                 </Text>
                 <Text color="gray.600" lineHeight="1.6">
-                  Transforming patient care with AI-powered diagnostic tools that reduced diagnosis time by 80%.
+                  Research team prototyped manipulation tasks using booked development slots, testing complex grasping algorithms in simulation.
                 </Text>
               </CardBody>
             </Card>
@@ -943,10 +943,10 @@ const LandingPage = ({ onGetStarted }) => {
               </Box>
               <CardBody p={6}>
                 <Text fontSize="lg" fontWeight="bold" color="blue.900" mb={3}>
-                  Retail Analytics Breakthrough
+                  Multi-Robot Coordination
                 </Text>
                 <Text color="gray.600" lineHeight="1.6">
-                  Leveraging predictive analytics to optimize inventory management and increase sales by 150%.
+                  Startup team built swarm robotics demo by booking extended sessions and collaborating through shared development environments.
                 </Text>
               </CardBody>
             </Card>

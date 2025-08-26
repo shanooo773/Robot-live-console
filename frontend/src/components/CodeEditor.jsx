@@ -57,7 +57,7 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
                 
                 {slot && (
                   <HStack spacing={4}>
-                    <Badge colorScheme="green">Active Session</Badge>
+                    <Badge colorScheme="green">Development Session Active</Badge>
                     <HStack>
                       <Text fontSize="lg">{robotNames[slot.robotType].emoji}</Text>
                       <Text color="gray.300">
@@ -90,7 +90,7 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
         <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
           <CardHeader>
             <Text fontSize="xl" fontWeight="bold" color="white">
-              Robot Programming Console
+              Development Console - ROS & Gazebo Environment
             </Text>
           </CardHeader>
           <CardBody>

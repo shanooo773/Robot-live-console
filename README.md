@@ -1,15 +1,16 @@
-# 🤖 Robot Live Console
+# 🤖 Robot Development Console Booking System
 
-An interactive web-based platform for writing Python code to control robots in a simulated environment using ROS and Gazebo. Users can write ROS Python code in a Monaco editor and see their robot behavior as a video simulation.
+An interactive web-based platform for booking time slots to develop and test robotics code in professional simulation environments. Users can reserve development sessions, write ROS Python code in a Monaco editor, and see their robot behavior through Gazebo simulations with real-time video feedback.
 
 ## ✨ Features
 
-- **Interactive Code Editor**: Monaco Editor with Python syntax highlighting and autocomplete
-- **Robot Selection**: Choose between different robot types (Arm, Hand, TurtleBot3)
-- **Real-time Simulation**: Execute code in a Dockerized ROS Noetic environment with Gazebo
-- **Video Output**: See simulation results as MP4 videos
-- **Secure Execution**: Sandboxed Docker containers with resource limits
-- **One-Command Setup**: Get everything running with a single script
+- **Time Slot Booking System**: Reserve dedicated development sessions with guaranteed access to computing resources
+- **Professional Development Console**: Monaco Editor with Python syntax highlighting, autocomplete, and ROS library support  
+- **Multiple Robot Environments**: Choose between TurtleBot3 navigation, Robot Arm manipulation, and Dexterous Hand control
+- **Real-time Gazebo Simulation**: Execute code in Dockerized ROS Noetic environments with physics simulation
+- **Video Feedback**: Get MP4 recordings of your simulation results for analysis and debugging
+- **Secure Sandboxed Execution**: Isolated Docker containers with resource limits for safe code execution
+- **One-Command Setup**: Get the entire booking and development system running with a single script
 
 ## 🚀 Quick Start
 
@@ -54,18 +55,23 @@ An interactive web-based platform for writing Python code to control robots in a
 
 ## 🏗️ Architecture
 
+The system implements a complete booking → development → simulation workflow:
+
 ```
 Robot-live-console/
-├── frontend/           # React + Vite + Monaco Editor
+├── frontend/           # React + Vite booking and development interface
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── CodeEditor.jsx
-│   │   │   ├── RobotSelector.jsx
-│   │   │   └── VideoPlayer.jsx
+│   │   │   ├── LandingPage.jsx     # Platform introduction and booking CTA
+│   │   │   ├── AuthPage.jsx        # User authentication
+│   │   │   ├── BookingPage.jsx     # Time slot booking interface
+│   │   │   ├── CodeEditor.jsx      # Development console (Monaco Editor)
+│   │   │   ├── RobotSelector.jsx   # Environment selection
+│   │   │   └── VideoPlayer.jsx     # Simulation result viewer
 │   │   ├── api.js
 │   │   └── constants.js
 │   └── package.json
-├── backend/            # FastAPI backend
+├── backend/            # FastAPI booking and simulation backend
 │   ├── main.py
 │   ├── requirements.txt
 │   ├── videos/         # Generated simulation videos
@@ -84,22 +90,22 @@ Robot-live-console/
 └── README.md
 ```
 
-## 🤖 Available Robots
+## 🤖 Available Development Environments
 
-### 1. Robot Arm
-- **Description**: 2-DOF robotic arm with base and two joints
-- **Use Cases**: Pick and place, reaching tasks
-- **Sample Code**: Joint position control using ROS topics
+### 1. TurtleBot3 Navigation Environment
+- **Focus**: Mobile robot navigation and path planning
+- **Use Cases**: Autonomous navigation, obstacle avoidance, SLAM, path following
+- **Sample Code**: Velocity commands, sensor data processing, navigation algorithms
 
-### 2. Robot Hand
-- **Description**: Simple gripper with fingers and thumb
-- **Use Cases**: Grasping, manipulation tasks
-- **Sample Code**: Finger control for opening/closing
+### 2. Robot Arm Manipulation Environment  
+- **Focus**: 6-DOF robotic arm control and manipulation
+- **Use Cases**: Pick and place, trajectory planning, inverse kinematics, workspace analysis
+- **Sample Code**: Joint position control, end-effector control, motion planning
 
-### 3. TurtleBot3
-- **Description**: Differential drive mobile robot
-- **Use Cases**: Navigation, path following, obstacle avoidance
-- **Sample Code**: Velocity commands for movement
+### 3. Dexterous Hand Control Environment
+- **Focus**: Complex finger and thumb manipulation
+- **Use Cases**: Grasping, object manipulation, dexterous control, tactile feedback
+- **Sample Code**: Finger control, grasp planning, force control
 
 ## 📝 Code Examples
 
