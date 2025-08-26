@@ -1,59 +1,14 @@
-# Use Ubuntu 20.04 as base for ROS Noetic compatibility
-FROM ubuntu:20.04
+# Use osrf/ros:noetic-desktop-full as base (pre-built with ROS and Gazebo)
+FROM osrf/ros:noetic-desktop-full
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
-ENV ROS_DISTRO=noetic
-ENV ROS_ROOT=/opt/ros/noetic
-ENV ROS_PACKAGE_PATH=/opt/ros/noetic/share
-ENV ROS_PYTHON_VERSION=3
 ENV PYTHONPATH=/opt/simulation:$PYTHONPATH
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# Install basic dependencies with better error handling
-RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
-    wget \
-    curl \
-    gnupg2 \
-    lsb-release \
-    ca-certificates \
-    software-properties-common \
-    apt-transport-https \
-    && rm -rf /var/lib/apt/lists/*
-
-# Add ROS repository
-RUN wget -O - https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - \
-    && echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list
-
-# Install ROS Noetic Desktop Full + Gazebo + additional tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-noetic-desktop-full \
-    ros-noetic-gazebo-ros-pkgs \
-    ros-noetic-gazebo-ros-control \
-    ros-noetic-effort-controllers \
-    ros-noetic-joint-state-controller \
-    ros-noetic-position-controllers \
-    ros-noetic-velocity-controllers \
-    python3-rosdep \
-    python3-rosinstall \
-    python3-rosinstall-generator \
-    python3-wstool \
-    build-essential \
-    python3-catkin-tools \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install video recording dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    xvfb \
-    ffmpeg \
-    x11-utils \
-    mesa-utils \
-    xauth \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install VNC and NoVNC dependencies for browser-based GUI access with Mesa software rendering
+# Install VNC and NoVNC dependencies with Mesa software rendering
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tigervnc-standalone-server \
     tigervnc-xorg-extension \
@@ -62,7 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openbox \
     xterm \
     git \
-    supervisor \
     dbus-x11 \
     libgl1-mesa-glx \
     libgl1-mesa-dri \
@@ -71,15 +25,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxss1 \
     libgconf-2-4 \
+    x11-utils \
+    mesa-utils \
+    xauth \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install NoVNC
 RUN git clone https://github.com/novnc/noVNC.git /opt/novnc && \
     git clone https://github.com/novnc/websockify /opt/novnc/utils/websockify && \
     chmod +x /opt/novnc/utils/novnc_proxy
-
-# Initialize rosdep
-RUN rosdep init && rosdep update
 
 # Create simulation workspace
 WORKDIR /opt/simulation
@@ -88,23 +43,17 @@ RUN mkdir -p /opt/simulation/robots /opt/simulation/scripts /opt/simulation/laun
 # Copy robot descriptions and simulation files
 COPY robots/ /opt/simulation/robots/
 COPY scripts/ /opt/simulation/scripts/
-
-# Create launch files directory and copy launch files
 COPY launch/ /opt/simulation/launch/ 
 
-# Create main simulation runner script
-COPY scripts/record_simulation.sh /opt/simulation/record_simulation.sh
-COPY scripts/run_simulation.py /opt/simulation/run_simulation.py
-
-# Make scripts executable
-RUN chmod +x /opt/simulation/record_simulation.sh && \
-    chmod +x /opt/simulation/run_simulation.py
+# Make scripts executable if they exist
+RUN find /opt/simulation -name "*.sh" -exec chmod +x {} \; || true
+RUN find /opt/simulation -name "*.py" -exec chmod +x {} \; || true
 
 # Source ROS setup in bashrc for interactive sessions
 RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc \
     && echo "export ROS_PACKAGE_PATH=/opt/simulation:$ROS_PACKAGE_PATH" >> /root/.bashrc
 
-# Set up VNC configuration
+# Set up VNC configuration with proper permissions
 RUN mkdir -p /root/.vnc && \
     echo "gazebo" | vncpasswd -f > /root/.vnc/passwd && \
     chmod 600 /root/.vnc/passwd
@@ -181,19 +130,24 @@ export PYTHONPATH=/opt/simulation:$PYTHONPATH\n\
 mkdir -p /tmp /output /workspace /root/.vnc /var/run/dbus\n\
 chmod 777 /tmp /output /workspace\n\
 \n\
+# Configure Mesa for software rendering\n\
+export LIBGL_ALWAYS_SOFTWARE=1\n\
+export GALLIUM_DRIVER=llvmpipe\n\
+\n\
 # Start D-Bus service\n\
 echo "Starting D-Bus..."\n\
 dbus-daemon --system --fork || true\n\
 \n\
 # Kill any existing VNC servers\n\
 vncserver -kill :1 2>/dev/null || true\n\
+sleep 1\n\
 \n\
 # Start VNC server with better configuration\n\
 echo "Starting VNC server on display :1..."\n\
 vncserver :1 -geometry 1280x720 -depth 24 -SecurityTypes None -localhost no\n\
 \n\
 # Wait for VNC to start\n\
-sleep 2\n\
+sleep 3\n\
 \n\
 # Verify VNC is running\n\
 if ! pgrep -f "Xvnc.*:1" > /dev/null; then\n\
