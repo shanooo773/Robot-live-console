@@ -74,36 +74,32 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
   };
 
   return (
-    <Box w="100%">
-      <Text mb={2} fontSize="lg" color="white" fontWeight="bold">
-        Robot Simulation
-      </Text>
-      
+    <Box w="100%" h="100%">
       <Button
         colorScheme="green"
         mb={4}
         isLoading={isLoading}
         loadingText="Running Simulation..."
         onClick={runCode}
-        size="lg"
+        size="md"
         w="full"
       >
         Run Code
       </Button>
 
       {isError && (
-        <Alert status="error" mb={4}>
+        <Alert status="error" mb={2} size="sm">
           <AlertIcon />
           <Box>
-            <Text fontWeight="bold">Execution Failed</Text>
-            <Text fontSize="sm">{error}</Text>
+            <Text fontWeight="bold" fontSize="sm">Execution Failed</Text>
+            <Text fontSize="xs">{error}</Text>
           </Box>
         </Alert>
       )}
 
       {isLoading && (
         <Box
-          height="75vh"
+          height="calc(100% - 60px)"
           display="flex"
           flexDirection="column"
           alignItems="center"
@@ -112,20 +108,19 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
           borderRadius="md"
           bg="#1a1a1a"
         >
-          <Spinner size="xl" color="blue.400" mb={4} />
-          <Text color="gray.300" fontSize="lg" mb={2}>
+          <Spinner size="lg" color="blue.400" mb={2} />
+          <Text color="gray.300" fontSize="md" mb={1}>
             Running Robot Simulation...
           </Text>
-          <Text color="gray.500" fontSize="sm" textAlign="center" maxW="md">
+          <Text color="gray.500" fontSize="xs" textAlign="center" maxW="sm">
             Your code is being executed in the robot simulation environment.
-            This may take a few moments.
           </Text>
         </Box>
       )}
 
       {videoUrl && !isLoading && (
         <Box
-          height="75vh"
+          height="calc(100% - 60px)"
           border="1px solid #333"
           borderRadius="md"
           bg="#1a1a1a"
@@ -138,16 +133,15 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
               flexDirection="column"
               alignItems="center"
               justifyContent="center"
-              p={6}
+              p={4}
             >
-              <Text color="yellow.400" fontSize="lg" mb={2}>
+              <Text color="yellow.400" fontSize="md" mb={2}>
                 ⚠️ Video Unavailable
               </Text>
-              <Text color="gray.300" textAlign="center" mb={4}>
+              <Text color="gray.300" textAlign="center" mb={2} fontSize="sm">
                 The simulation completed successfully, but the video couldn't be loaded.
-                This might be due to the simulation running in mock mode.
               </Text>
-              <Text color="gray.400" fontSize="sm" textAlign="center">
+              <Text color="gray.400" fontSize="xs" textAlign="center">
                 Execution ID: {executionId}
               </Text>
             </Box>
@@ -171,7 +165,7 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
 
       {!videoUrl && !isLoading && !isError && (
         <Box
-          height="75vh"
+          height="calc(100% - 60px)"
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -179,7 +173,7 @@ const VideoPlayer = ({ editorRef, robot, codeValue }) => {
           borderRadius="md"
           bg="#1a1a1a"
         >
-          <Text color="gray.500" textAlign="center">
+          <Text color="gray.500" textAlign="center" fontSize="sm">
             Select a robot and run your code to see the simulation
           </Text>
         </Box>
