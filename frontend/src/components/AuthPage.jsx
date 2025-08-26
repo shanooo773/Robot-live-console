@@ -19,8 +19,18 @@ import {
   useToast,
   Alert,
   AlertIcon,
+  InputGroup,
+  InputRightElement,
+  IconButton,
 } from "@chakra-ui/react";
+import { motion } from "framer-motion";
 import { useState } from "react";
+
+const MotionBox = motion(Box);
+const MotionCard = motion(Card);
+const MotionText = motion(Text);
+const MotionButton = motion(Button);
+const MotionVStack = motion(VStack);
 
 const AuthPage = ({ onAuth, onBack }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -112,25 +122,90 @@ const AuthPage = ({ onAuth, onBack }) => {
 
   return (
     <Container maxW="md" py={20}>
-      <VStack spacing={8}>
-        <VStack spacing={4} textAlign="center">
-          <Text fontSize="4xl">🤖</Text>
-          <Text fontSize="2xl" fontWeight="bold" color="white">
-            Welcome Back
-          </Text>
-          <Text color="gray.300">
-            Sign in to book your robot programming session
-          </Text>
-        </VStack>
+      <MotionVStack 
+        spacing={12}
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        {/* Header */}
+        <MotionBox
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+        >
+          <VStack spacing={6} textAlign="center">
+            <MotionText 
+              fontSize="6xl"
+              animate={{ 
+                y: [0, -10, 0],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ 
+                duration: 3, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+              filter="drop-shadow(0 0 20px rgba(56, 189, 248, 0.3))"
+            >
+              🤖
+            </MotionText>
+            <MotionText 
+              fontSize={{ base: "2xl", md: "3xl" }}
+              fontWeight="bold" 
+              bgGradient="linear(to-r, brand.400, accent.400)"
+              bgClip="text"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+            >
+              Welcome Back
+            </MotionText>
+            <MotionText 
+              color="gray.300" 
+              fontSize="lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+            >
+              Sign in to book your robot programming session
+            </MotionText>
+          </VStack>
+        </MotionBox>
 
-        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
-          <CardBody>
-            <Tabs variant="enclosed" colorScheme="blue">
-              <TabList>
-                <Tab color="gray.300" _selected={{ color: "white", bg: "blue.600" }}>
+        {/* Auth Card */}
+        <MotionCard 
+          w="full" 
+          variant="glass"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.8 }}
+        >
+          <CardBody p={8}>
+            <Tabs variant="enclosed" colorScheme="brand">
+              <TabList mb={6} borderRadius="xl" bg="rgba(255, 255, 255, 0.05)">
+                <Tab 
+                  color="gray.300" 
+                  _selected={{ 
+                    color: "white", 
+                    bg: "linear-gradient(135deg, brand.500 0%, brand.600 100%)",
+                    borderRadius: "lg"
+                  }}
+                  borderRadius="lg"
+                  fontWeight="600"
+                >
                   Sign In
                 </Tab>
-                <Tab color="gray.300" _selected={{ color: "white", bg: "blue.600" }}>
+                <Tab 
+                  color="gray.300" 
+                  _selected={{ 
+                    color: "white", 
+                    bg: "linear-gradient(135deg, brand.500 0%, brand.600 100%)",
+                    borderRadius: "lg"
+                  }}
+                  borderRadius="lg"
+                  fontWeight="600"
+                >
                   Sign Up
                 </Tab>
               </TabList>
@@ -141,45 +216,43 @@ const AuthPage = ({ onAuth, onBack }) => {
                   <form onSubmit={handleLogin}>
                     <VStack spacing={4}>
                       <FormControl>
-                        <FormLabel color="gray.300">Email</FormLabel>
+                        <FormLabel color="gray.300" fontWeight="600">Email</FormLabel>
                         <Input
                           type="email"
                           placeholder="Enter your email"
                           value={loginData.email}
                           onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          variant="glass"
+                          size="lg"
+                          _placeholder={{ color: "gray.500" }}
                         />
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel color="gray.300">Password</FormLabel>
+                        <FormLabel color="gray.300" fontWeight="600">Password</FormLabel>
                         <Input
                           type="password"
                           placeholder="Enter your password"
                           value={loginData.password}
                           onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          variant="glass"
+                          size="lg"
+                          _placeholder={{ color: "gray.500" }}
                         />
                       </FormControl>
 
-                      <Button
+                      <MotionButton
                         type="submit"
-                        colorScheme="blue"
-                        size="lg"
+                        variant="gradient"
                         w="full"
+                        size="lg"
                         isLoading={isLoading}
                         loadingText="Signing in..."
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         Sign In
-                      </Button>
+                      </MotionButton>
                     </VStack>
                   </form>
                 </TabPanel>
@@ -187,96 +260,92 @@ const AuthPage = ({ onAuth, onBack }) => {
                 {/* Register Tab */}
                 <TabPanel px={0}>
                   <form onSubmit={handleRegister}>
-                    <VStack spacing={4}>
+                    <VStack spacing={6}>
                       <FormControl>
-                        <FormLabel color="gray.300">Full Name</FormLabel>
+                        <FormLabel color="gray.300" fontWeight="600">Full Name</FormLabel>
                         <Input
                           type="text"
                           placeholder="Enter your full name"
                           value={registerData.name}
                           onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          variant="glass"
+                          size="lg"
+                          _placeholder={{ color: "gray.500" }}
                         />
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel color="gray.300">Email</FormLabel>
+                        <FormLabel color="gray.300" fontWeight="600">Email</FormLabel>
                         <Input
                           type="email"
                           placeholder="Enter your email"
                           value={registerData.email}
                           onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          variant="glass"
+                          size="lg"
+                          _placeholder={{ color: "gray.500" }}
                         />
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel color="gray.300">Password</FormLabel>
+                        <FormLabel color="gray.300" fontWeight="600">Password</FormLabel>
                         <Input
                           type="password"
-                          placeholder="Choose a password"
+                          placeholder="Create a password"
                           value={registerData.password}
                           onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          variant="glass"
+                          size="lg"
+                          _placeholder={{ color: "gray.500" }}
                         />
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel color="gray.300">Confirm Password</FormLabel>
+                        <FormLabel color="gray.300" fontWeight="600">Confirm Password</FormLabel>
                         <Input
                           type="password"
                           placeholder="Confirm your password"
                           value={registerData.confirmPassword}
                           onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          _placeholder={{ color: "gray.400" }}
+                          variant="glass"
+                          size="lg"
+                          _placeholder={{ color: "gray.500" }}
                         />
                       </FormControl>
 
-                      <Button
+                      <MotionButton
                         type="submit"
-                        colorScheme="green"
-                        size="lg"
+                        variant="gradient"
                         w="full"
+                        size="lg"
                         isLoading={isLoading}
                         loadingText="Creating account..."
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         Create Account
-                      </Button>
+                      </MotionButton>
                     </VStack>
                   </form>
                 </TabPanel>
               </TabPanels>
             </Tabs>
           </CardBody>
-        </Card>
+        </MotionCard>
 
-        <Alert status="info" bg="blue.900" color="blue.100" border="1px solid" borderColor="blue.600">
-          <AlertIcon color="blue.300" />
-          <Text fontSize="sm">
-            This is a demo system. Use any email/password to test the functionality.
-          </Text>
-        </Alert>
-
-        <Button variant="ghost" onClick={onBack} color="gray.400">
+        {/* Back Button */}
+        <MotionButton
+          variant="glass"
+          onClick={onBack}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.0, duration: 0.8 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           ← Back to Home
-        </Button>
-      </VStack>
+        </MotionButton>
+      </MotionVStack>
     </Container>
   );
 };
