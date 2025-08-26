@@ -145,42 +145,119 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
   };
 
   return (
-    <Container maxW="7xl" py={8}>
-      <VStack spacing={8}>
-        {/* Header */}
-        <HStack w="full" justify="space-between">
-          <VStack align="start" spacing={1}>
-            <Text fontSize="3xl" fontWeight="bold" color="white">
-              Book Your Robot Session
-            </Text>
-            <HStack>
-              <Avatar size="sm" name={user.name} />
-              <Text color="gray.300">Welcome, {user.name}</Text>
-            </HStack>
-          </VStack>
-          <Button variant="ghost" onClick={onLogout} color="gray.400">
-            Logout
-          </Button>
-        </HStack>
+    <Box minH="100vh" position="relative">
+      {/* Enhanced background */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        bgGradient="gradient.dark"
+        opacity={0.9}
+        zIndex={-1}
+      />
+      
+      {/* Subtle background animation */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        overflow="hidden"
+        zIndex={-1}
+      >
+        {[...Array(8)].map((_, i) => (
+          <Box
+            key={i}
+            position="absolute"
+            w="2px"
+            h="2px"
+            bg="robotics.accent"
+            borderRadius="full"
+            opacity={0.1}
+            animation={`float ${5 + i * 0.4}s ease-in-out infinite alternate`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${i * 0.4}s`,
+            }}
+          />
+        ))}
+      </Box>
 
-        {/* Filters */}
-        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
+    <Container maxW="7xl" py={8} position="relative" zIndex={1}>
+      <VStack spacing={10}>
+        {/* Enhanced Header */}
+        <Card variant="gradient" w="full" p={6}>
+          <HStack w="full" justify="space-between">
+            <VStack align="start" spacing={3}>
+              <Text 
+                fontSize={{ base: "2xl", md: "3xl" }} 
+                fontWeight="bold" 
+                bgGradient="linear(to-r, white, robotics.primary)"
+                bgClip="text"
+              >
+                Book Your Robot Session
+              </Text>
+              <HStack spacing={3}>
+                <Avatar 
+                  size="sm" 
+                  name={user.name} 
+                  border="2px solid"
+                  borderColor="robotics.primary"
+                />
+                <Text color="gray.200" fontSize="lg">Welcome, {user.name}</Text>
+              </HStack>
+            </VStack>
+            <Button 
+              variant="ghost" 
+              onClick={onLogout} 
+              color="gray.400"
+              size="lg"
+              _hover={{
+                color: "robotics.secondary",
+                bg: "whiteAlpha.100"
+              }}
+            >
+              Logout
+            </Button>
+          </HStack>
+        </Card>
+
+        {/* Enhanced Filters */}
+        <Card variant="gradient" w="full" border="1px solid" borderColor="dark.border">
           <CardHeader>
-            <Text fontSize="lg" fontWeight="bold" color="white">
-              Filter Available Sessions
-            </Text>
+            <HStack>
+              <Text fontSize="xl" fontWeight="bold" color="white">
+                Filter Available Sessions
+              </Text>
+              <Badge variant="glow">
+                {availableSlots.length} Available
+              </Badge>
+            </HStack>
           </CardHeader>
           <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
               <FormControl>
-                <FormLabel color="gray.300">Date</FormLabel>
+                <FormLabel 
+                  color="gray.300" 
+                  fontSize="md" 
+                  fontWeight="semibold"
+                  mb={3}
+                >
+                  Date
+                </FormLabel>
                 <Select
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  size="lg"
+                  borderRadius="lg"
+                  _focus={{
+                    borderColor: "robotics.primary",
+                    boxShadow: "0 0 0 3px rgba(0,212,255,0.1)"
+                  }}
                 >
                   <option value="">All dates</option>
                   {getDateOptions().map(option => (
@@ -192,14 +269,23 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
               </FormControl>
 
               <FormControl>
-                <FormLabel color="gray.300">Robot Type</FormLabel>
+                <FormLabel 
+                  color="gray.300" 
+                  fontSize="md" 
+                  fontWeight="semibold"
+                  mb={3}
+                >
+                  Robot Type
+                </FormLabel>
                 <Select
                   value={selectedRobot}
                   onChange={(e) => setSelectedRobot(e.target.value)}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  size="lg"
+                  borderRadius="lg"
+                  _focus={{
+                    borderColor: "robotics.primary",
+                    boxShadow: "0 0 0 3px rgba(0,212,255,0.1)"
+                  }}
                 >
                   <option value="">All robots</option>
                   <option value="turtlebot">🤖 TurtleBot3</option>
@@ -210,71 +296,96 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
             </SimpleGrid>
           </CardBody>
         </Card>
-
-        {/* Available Slots */}
-        <VStack w="full" spacing={6}>
-          <HStack w="full" justify="space-between">
-            <Text fontSize="xl" fontWeight="bold" color="white">
+        {/* Enhanced Available Slots */}
+        <VStack w="full" spacing={8}>
+          <HStack w="full" justify="space-between" align="center">
+            <Text 
+              fontSize={{ base: "xl", md: "2xl" }} 
+              fontWeight="bold" 
+              bgGradient="linear(to-r, white, robotics.accent)"
+              bgClip="text"
+            >
               Available Sessions ({availableSlots.length})
             </Text>
-            <Badge colorScheme="green" px={3} py={1}>
+            <Badge variant="robotics" px={4} py={2} fontSize="sm" borderRadius="full">
               {availableSlots.length} slots free
             </Badge>
           </HStack>
 
           {availableSlots.length === 0 ? (
-            <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
-              <CardBody textAlign="center" py={12}>
-                <Text fontSize="xl" color="gray.400" mb={2}>
+            <Card variant="gradient" w="full" border="1px solid" borderColor="dark.border">
+              <CardBody textAlign="center" py={16}>
+                <Text fontSize="6xl" mb={4}>😔</Text>
+                <Text fontSize="xl" color="gray.300" mb={3}>
                   No available slots found
                 </Text>
-                <Text color="gray.500">
+                <Text color="gray.400">
                   Try adjusting your filters or check back later
                 </Text>
               </CardBody>
             </Card>
           ) : (
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} w="full">
               {availableSlots.map((slot) => (
                 <Card
                   key={slot.id}
-                  bg="gray.800"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  _hover={{ borderColor: "green.400", transform: "translateY(-2px)" }}
-                  transition="all 0.2s"
+                  variant="gradient"
+                  cursor="pointer"
+                  position="relative"
+                  overflow="hidden"
+                  _hover={{
+                    transform: "translateY(-4px) scale(1.02)",
+                    boxShadow: "0 10px 30px rgba(0,212,255,0.2)",
+                  }}
+                  transition="all 0.3s ease-in-out"
                 >
-                  <CardBody>
-                    <VStack spacing={3} align="start">
+                  {/* Hover effect */}
+                  <Box
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    bottom={0}
+                    bgGradient="linear(to-br, rgba(0,212,255,0.1), rgba(78,205,196,0.1))"
+                    opacity={0}
+                    transition="opacity 0.3s"
+                    _groupHover={{ opacity: 1 }}
+                  />
+                  
+                  <CardBody p={6} position="relative" zIndex={1}>
+                    <VStack spacing={4} align="start">
                       <HStack justify="space-between" w="full">
-                        <Badge colorScheme="green">Available</Badge>
-                        <HStack>
-                          <Text fontSize="xl">{robotNames[slot.robotType].emoji}</Text>
-                          <Text fontSize="sm" color="gray.300">
+                        <Badge variant="robotics" size="sm">Available</Badge>
+                        <HStack spacing={2}>
+                          <Text fontSize="2xl">{robotNames[slot.robotType].emoji}</Text>
+                          <Text fontSize="sm" color="gray.300" fontWeight="semibold">
                             {robotNames[slot.robotType].name}
                           </Text>
                         </HStack>
                       </HStack>
                       
-                      <VStack align="start" spacing={1}>
-                        <Text color="white" fontWeight="bold">
+                      <VStack align="start" spacing={2} w="full">
+                        <Text color="white" fontWeight="bold" fontSize="lg">
                           {new Date(slot.date).toLocaleDateString('en-US', { 
                             weekday: 'long', 
                             month: 'long', 
                             day: 'numeric' 
                           })}
                         </Text>
-                        <Text color="gray.300" fontSize="lg">
+                        <Text color="robotics.primary" fontSize="xl" fontWeight="bold">
                           {slot.startTime} - {slot.endTime}
                         </Text>
                       </VStack>
 
                       <Button
-                        colorScheme="green"
+                        variant="robotics"
                         w="full"
+                        size="lg"
                         onClick={() => handleBookSlot(slot)}
                         isLoading={isLoading}
                         loadingText="Booking..."
+                        leftIcon={<Text fontSize="lg">🚀</Text>}
+                        mt={2}
                       >
                         Book This Session
                       </Button>
@@ -286,57 +397,72 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
           )}
         </VStack>
 
-        {/* Booked Slots (for reference) */}
+        {/* Enhanced Booked Slots (for reference) */}
         {bookedSlots.length > 0 && (
-          <VStack w="full" spacing={6}>
-            <Divider borderColor="gray.600" />
+          <VStack w="full" spacing={8}>
+            <Divider borderColor="dark.border" />
             
-            <HStack w="full" justify="space-between">
-              <Text fontSize="xl" fontWeight="bold" color="white">
+            <HStack w="full" justify="space-between" align="center">
+              <Text 
+                fontSize={{ base: "xl", md: "2xl" }} 
+                fontWeight="bold" 
+                bgGradient="linear(to-r, gray.400, robotics.secondary)"
+                bgClip="text"
+              >
                 Unavailable Sessions
               </Text>
-              <Badge colorScheme="red" px={3} py={1}>
+              <Badge variant="outline" colorScheme="red" px={4} py={2} fontSize="sm" borderRadius="full">
                 {bookedSlots.length} slots taken
               </Badge>
             </HStack>
 
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} w="full">
               {bookedSlots.slice(0, 6).map((slot) => (
                 <Card
                   key={slot.id}
-                  bg="gray.900"
+                  bg="whiteAlpha.50"
                   border="1px solid"
                   borderColor="gray.700"
-                  opacity={0.7}
+                  opacity={0.6}
+                  position="relative"
                 >
-                  <CardBody>
-                    <VStack spacing={3} align="start">
+                  <CardBody p={6}>
+                    <VStack spacing={4} align="start">
                       <HStack justify="space-between" w="full">
-                        <Badge colorScheme="red">Taken</Badge>
-                        <HStack>
-                          <Text fontSize="xl">{robotNames[slot.robotType].emoji}</Text>
-                          <Text fontSize="sm" color="gray.400">
+                        <Badge colorScheme="red" variant="subtle">Taken</Badge>
+                        <HStack spacing={2}>
+                          <Text fontSize="2xl" opacity={0.6}>{robotNames[slot.robotType].emoji}</Text>
+                          <Text fontSize="sm" color="gray.400" fontWeight="semibold">
                             {robotNames[slot.robotType].name}
                           </Text>
                         </HStack>
                       </HStack>
                       
-                      <VStack align="start" spacing={1}>
-                        <Text color="gray.300">
+                      <VStack align="start" spacing={2} w="full">
+                        <Text color="gray.300" fontWeight="bold">
                           {new Date(slot.date).toLocaleDateString('en-US', { 
                             weekday: 'long', 
                             month: 'long', 
                             day: 'numeric' 
                           })}
                         </Text>
-                        <Text color="gray.400">
+                        <Text color="gray.400" fontSize="lg">
                           {slot.startTime} - {slot.endTime}
                         </Text>
                       </VStack>
 
-                      <Text fontSize="sm" color="gray.500">
-                        Booked by {slot.bookedBy}
-                      </Text>
+                      <Box
+                        w="full"
+                        p={3}
+                        bg="red.900"
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="red.700"
+                      >
+                        <Text color="red.200" fontSize="sm" textAlign="center" fontWeight="semibold">
+                          Booked by {slot.bookedBy}
+                        </Text>
+                      </Box>
                     </VStack>
                   </CardBody>
                 </Card>
@@ -345,7 +471,8 @@ const BookingPage = ({ user, onBooking, onLogout }) => {
           </VStack>
         )}
       </VStack>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 
