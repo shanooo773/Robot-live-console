@@ -1,17 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box } from "@chakra-ui/react";
 import LandingPage from "./components/LandingPage";
 import AuthPage from "./components/AuthPage";
 import BookingPage from "./components/BookingPage";
 import CodeEditor from "./components/CodeEditor";
+import AdminDashboard from "./components/AdminDashboard";
+import { getCurrentUser } from "./api";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState("landing"); // landing, auth, booking, editor
+  const [currentPage, setCurrentPage] = useState("landing"); // landing, auth, booking, editor, admin
   const [user, setUser] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  const handleAuth = (userData) => {
+  useEffect(() => {
+    // Check for existing token on app load
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      getCurrentUser(token)
+        .then(userData => {
+          setUser(userData);
+          setAuthToken(token);
+          setCurrentPage("booking");
+        })
+        .catch(error => {
+          console.error('Token validation failed:', error);
+          localStorage.removeItem('authToken');
+        });
+    }
+  }, []);
+
+  const handleAuth = (userData, token) => {
     setUser(userData);
+    setAuthToken(token);
     setCurrentPage("booking");
   };
 
@@ -22,8 +43,14 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
+    setAuthToken(null);
     setSelectedSlot(null);
+    localStorage.removeItem('authToken');
     setCurrentPage("landing");
+  };
+
+  const handleAdminAccess = () => {
+    setCurrentPage("admin");
   };
 
   return (
@@ -36,15 +63,25 @@ function App() {
       )}
       {currentPage === "booking" && (
         <BookingPage 
-          user={user} 
+          user={user}
+          authToken={authToken}
           onBooking={handleBooking} 
           onLogout={handleLogout}
+          onAdminAccess={user?.role === 'admin' ? handleAdminAccess : null}
         />
       )}
       {currentPage === "editor" && (
         <CodeEditor 
           user={user} 
           slot={selectedSlot} 
+          onBack={() => setCurrentPage("booking")}
+          onLogout={handleLogout}
+        />
+      )}
+      {currentPage === "admin" && user?.role === 'admin' && (
+        <AdminDashboard
+          user={user}
+          authToken={authToken}
           onBack={() => setCurrentPage("booking")}
           onLogout={handleLogout}
         />

@@ -21,6 +21,7 @@ import {
   AlertIcon,
 } from "@chakra-ui/react";
 import { useState } from "react";
+import { loginUser, registerUser } from "../api";
 
 const AuthPage = ({ onAuth, onBack }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -37,15 +38,17 @@ const AuthPage = ({ onAuth, onBack }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call with dummy validation
-    setTimeout(() => {
+    try {
       if (loginData.email && loginData.password) {
-        const userData = {
-          id: "user_123",
-          name: loginData.email.split("@")[0],
+        const response = await loginUser({
           email: loginData.email,
-        };
-        onAuth(userData);
+          password: loginData.password
+        });
+        
+        // Store token in localStorage
+        localStorage.setItem('authToken', response.access_token);
+        
+        onAuth(response.user, response.access_token);
         toast({
           title: "Login successful",
           status: "success",
@@ -61,16 +64,25 @@ const AuthPage = ({ onAuth, onBack }) => {
           isClosable: true,
         });
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login failed",
+        description: error.response?.data?.detail || "Invalid email or password",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call with dummy validation
-    setTimeout(() => {
+    try {
       if (registerData.name && registerData.email && registerData.password) {
         if (registerData.password !== registerData.confirmPassword) {
           toast({
@@ -84,12 +96,16 @@ const AuthPage = ({ onAuth, onBack }) => {
           return;
         }
 
-        const userData = {
-          id: "user_" + Date.now(),
+        const response = await registerUser({
           name: registerData.name,
           email: registerData.email,
-        };
-        onAuth(userData);
+          password: registerData.password
+        });
+        
+        // Store token in localStorage
+        localStorage.setItem('authToken', response.access_token);
+        
+        onAuth(response.user, response.access_token);
         toast({
           title: "Registration successful",
           description: "Welcome to Robot Programming Console!",
@@ -106,8 +122,18 @@ const AuthPage = ({ onAuth, onBack }) => {
           isClosable: true,
         });
       }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast({
+        title: "Registration failed",
+        description: error.response?.data?.detail || "Registration failed. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
