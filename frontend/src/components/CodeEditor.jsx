@@ -17,6 +17,7 @@ import { Editor } from "@monaco-editor/react";
 import RobotSelector from "./RobotSelector";
 import LanguageSelector from "./LanguageSelector";
 import LiveResults from "./LiveResults";
+import ServiceStatus from "./ServiceStatus";
 import { ROBOT_CODE_SNIPPETS } from "../constants";
 import VideoPlayer from "./VideoPlayer";
 
@@ -31,6 +32,7 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
   const [robot, setRobot] = useState(slot?.robotType || "turtlebot");
   const [language, setLanguage] = useState("python");
   const [value, setValue] = useState(ROBOT_CODE_SNIPPETS["python"][slot?.robotType || "turtlebot"]);
+  const [serviceStatus, setServiceStatus] = useState(null);
 
   const onMount = (editor) => {
     editorRef.current = editor;
@@ -47,50 +49,61 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
     setValue(ROBOT_CODE_SNIPPETS[languageType][robot]);
   };
 
+  const handleStatusChange = (status) => {
+    setServiceStatus(status);
+  };
+
   return (
     <Container maxW="7xl" py={8}>
       <VStack spacing={6}>
         {/* Session Header */}
         <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
           <CardHeader>
-            <HStack justify="space-between">
-              <VStack align="start" spacing={2}>
-                <HStack>
-                  <Avatar size="sm" name={user.name} />
-                  <VStack align="start" spacing={0}>
-                    <Text color="white" fontWeight="bold">{user.name}</Text>
-                    <Text color="gray.400" fontSize="sm">{user.email}</Text>
-                  </VStack>
-                </HStack>
-                
-                {slot && (
-                  <HStack spacing={4}>
-                    <Badge colorScheme="green">Development Session Active</Badge>
-                    <HStack>
-                      <Text fontSize="lg">{robotNames[slot.robotType].emoji}</Text>
-                      <Text color="gray.300">
-                        {robotNames[slot.robotType].name}
+            <VStack spacing={4}>
+              <HStack justify="space-between" w="full">
+                <VStack align="start" spacing={2}>
+                  <HStack>
+                    <Avatar size="sm" name={user.name} />
+                    <VStack align="start" spacing={0}>
+                      <Text color="white" fontWeight="bold">{user.name}</Text>
+                      <Text color="gray.400" fontSize="sm">{user.email}</Text>
+                    </VStack>
+                  </HStack>
+                  
+                  {slot && (
+                    <HStack spacing={4}>
+                      <Badge colorScheme="green">Development Session Active</Badge>
+                      <HStack>
+                        <Text fontSize="lg">{robotNames[slot.robotType].emoji}</Text>
+                        <Text color="gray.300">
+                          {robotNames[slot.robotType].name}
+                        </Text>
+                      </HStack>
+                      <Text color="gray.400">
+                        {new Date(slot.date).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })} at {slot.startTime}
                       </Text>
                     </HStack>
-                    <Text color="gray.400">
-                      {new Date(slot.date).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })} at {slot.startTime}
-                    </Text>
-                  </HStack>
-                )}
-              </VStack>
-              
-              <HStack>
-                <Button variant="ghost" onClick={onBack} color="gray.400">
-                  ← Back to Booking
-                </Button>
-                <Button variant="ghost" onClick={onLogout} color="gray.400">
-                  Logout
-                </Button>
+                  )}
+                </VStack>
+                
+                <HStack>
+                  <Button variant="ghost" onClick={onBack} color="gray.400">
+                    ← Back to Booking
+                  </Button>
+                  <Button variant="ghost" onClick={onLogout} color="gray.400">
+                    Logout
+                  </Button>
+                </HStack>
               </HStack>
-            </HStack>
+              
+              {/* Service Status Bar */}
+              <Box w="full">
+                <ServiceStatus showDetails={true} onStatusChange={handleStatusChange} />
+              </Box>
+            </VStack>
           </CardHeader>
         </Card>
 
@@ -148,9 +161,17 @@ const CodeEditor = ({ user, slot, onBack, onLogout }) => {
                   <Box w="full">
                     <Text mb={2} fontSize="lg" color="white" fontWeight="bold">
                       Gazebo Simulation
+                      {serviceStatus?.services?.docker && !serviceStatus.services.docker.available && (
+                        <Badge ml={2} colorScheme="orange" fontSize="xs">Limited Mode</Badge>
+                      )}
                     </Text>
                     <Box h="35vh">
-                      <VideoPlayer editorRef={editorRef} robot={robot} codeValue={value} />
+                      <VideoPlayer 
+                        editorRef={editorRef} 
+                        robot={robot} 
+                        codeValue={value} 
+                        serviceStatus={serviceStatus}
+                      />
                     </Box>
                   </Box>
                 </VStack>

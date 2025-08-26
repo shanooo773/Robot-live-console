@@ -91,3 +91,19 @@ export const getAvailableRobots = async () => {
   const response = await API.get("/robots");
   return response.data;
 };
+
+// Health check API
+export const getSystemHealth = async () => {
+  const response = await API.get("/health");
+  return response.data;
+};
+
+export const getServiceStatus = async () => {
+  const response = await API.get("/health/services");
+  return response.data;
+};
+
+export const getAvailableFeatures = async () => {
+  const response = await API.get("/health/features");
+  return response.data;
+};
