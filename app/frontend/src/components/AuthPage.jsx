@@ -136,36 +136,6 @@ const AuthPage = ({ onAuth, onBack }) => {
     }
   };
 
-  const handleDemoUserLogin = () => {
-    const demoUser = {
-      username: "demo_user",
-      name: "Demo User",
-      email: "demo.user@example.com",
-      role: "user",
-      isDemoUser: true,
-    };
-    // Save demo user session flags
-    localStorage.setItem("isDemoUser", "true");
-    localStorage.setItem("isDummy", "true"); // Keep for backward compatibility
-    // Trigger login state in parent
-    onAuth(demoUser);
-  };
-
-  const handleDemoAdminLogin = () => {
-    const demoAdmin = {
-      username: "demo_admin",
-      name: "Demo Admin",
-      email: "demo.admin@example.com",
-      role: "admin",
-      isDemoAdmin: true,
-    };
-    // Save demo admin session flags
-    localStorage.setItem("isDemoAdmin", "true");
-    localStorage.setItem("isDummy", "true"); // Keep for backward compatibility
-    // Trigger login state in parent
-    onAuth(demoAdmin);
-  };
-
   return (
     <Container maxW="md" py={20}>
       <VStack spacing={8}>
@@ -236,35 +206,6 @@ const AuthPage = ({ onAuth, onBack }) => {
                       >
                         Sign In
                       </Button>
-
-                      {/* Demo Login Options */}
-                      <VStack spacing={2} w="full" marginTop="20px">
-                        <Text color="gray.400" fontSize="sm" fontWeight="bold">
-                          Demo Access
-                        </Text>
-                        <Button
-                          type="button"
-                          onClick={handleDemoUserLogin}
-                          variant="outline"
-                          colorScheme="green"
-                          size="lg"
-                          w="full"
-                          leftIcon={<Text>🎯</Text>}
-                        >
-                          Demo User - Full Access
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={handleDemoAdminLogin}
-                          variant="outline"
-                          colorScheme="purple"
-                          size="lg"
-                          w="full"
-                          leftIcon={<Text>👑</Text>}
-                        >
-                          Demo Admin - Dashboard Access
-                        </Button>
-                      </VStack>
                     </VStack>
                   </form>
                 </TabPanel>
@@ -354,7 +295,7 @@ const AuthPage = ({ onAuth, onBack }) => {
         <Alert status="info" bg="blue.900" color="blue.100" border="1px solid" borderColor="blue.600">
           <AlertIcon color="blue.300" />
           <Text fontSize="sm">
-            This is a demo system. Use any email/password to test the functionality.
+            For demo access, use demo@user.com / password (user) or admin@demo.com / password (admin).
           </Text>
         </Alert>
 
