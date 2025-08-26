@@ -37,6 +37,22 @@ const theme = extendTheme({
         bg: "linear-gradient(135deg, #001429 0%, #002952 50%, #003d7a 100%)",
         minHeight: "100vh",
       },
+      "@keyframes pulse": {
+        "0%, 100%": {
+          opacity: 1,
+        },
+        "50%": {
+          opacity: 0.8,
+        },
+      },
+      "@keyframes float": {
+        "0%, 100%": {
+          transform: "translateY(0px)",
+        },
+        "50%": {
+          transform: "translateY(-20px)",
+        },
+      },
     },
   },
   components: {
