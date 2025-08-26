@@ -27,7 +27,54 @@ function App() {
   };
 
   return (
-    <Box minH="100vh" bg="#0f0a19" color="gray.500">
+    <Box 
+      minH="100vh" 
+      bgGradient="linear(135deg, dark.900 0%, dark.800 25%, dark.700 50%, dark.600 75%, dark.500 100%)"
+      color="white"
+      position="relative"
+      overflow="hidden"
+    >
+      {/* Animated background elements */}
+      <Box
+        position="absolute"
+        top="10%"
+        left="10%"
+        w="200px"
+        h="200px"
+        bgGradient="radial(circle, brand.500 0%, transparent 70%)"
+        borderRadius="full"
+        opacity="0.1"
+        animation="float 6s ease-in-out infinite"
+        sx={{
+          "@keyframes float": {
+            "0%, 100%": { transform: "translateY(0px)" },
+            "50%": { transform: "translateY(-20px)" },
+          },
+        }}
+      />
+      <Box
+        position="absolute"
+        top="60%"
+        right="15%"
+        w="150px"
+        h="150px"
+        bgGradient="radial(circle, accent.500 0%, transparent 70%)"
+        borderRadius="full"
+        opacity="0.1"
+        animation="float 8s ease-in-out infinite reverse"
+      />
+      <Box
+        position="absolute"
+        bottom="20%"
+        left="60%"
+        w="100px"
+        h="100px"
+        bgGradient="radial(circle, success.500 0%, transparent 70%)"
+        borderRadius="full"
+        opacity="0.1"
+        animation="float 10s ease-in-out infinite"
+      />
+      
       {currentPage === "landing" && (
         <LandingPage onGetStarted={() => setCurrentPage("auth")} />
       )}
