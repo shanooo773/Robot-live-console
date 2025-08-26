@@ -16,6 +16,31 @@ function App() {
   useEffect(() => {
     // Check for existing token on app load
     const token = localStorage.getItem('authToken');
+    const isDemoUser = localStorage.getItem('isDemoUser');
+    const isDemoAdmin = localStorage.getItem('isDemoAdmin');
+    
+    // Handle demo sessions
+    if (isDemoUser || isDemoAdmin) {
+      const demoUser = isDemoUser ? {
+        username: "demo_user",
+        name: "Demo User", 
+        email: "demo.user@example.com",
+        role: "user",
+        isDemoUser: true,
+      } : {
+        username: "demo_admin",
+        name: "Demo Admin",
+        email: "demo.admin@example.com", 
+        role: "admin",
+        isDemoAdmin: true,
+      };
+      
+      setUser(demoUser);
+      setCurrentPage("booking");
+      return;
+    }
+    
+    // Handle regular token-based sessions
     if (token) {
       getCurrentUser(token)
         .then(userData => {
@@ -45,7 +70,11 @@ function App() {
     setUser(null);
     setAuthToken(null);
     setSelectedSlot(null);
+    // Clear all session storage including demo flags
     localStorage.removeItem('authToken');
+    localStorage.removeItem('isDemoUser');
+    localStorage.removeItem('isDemoAdmin');
+    localStorage.removeItem('isDummy');
     setCurrentPage("landing");
   };
 

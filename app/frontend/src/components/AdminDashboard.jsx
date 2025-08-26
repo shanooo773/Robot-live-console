@@ -167,6 +167,9 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
               <Avatar size="sm" name={user.name} />
               <Text color="gray.300">Welcome, {user.name}</Text>
               <Badge colorScheme="purple">Admin</Badge>
+              {(user?.isDemoAdmin || localStorage.getItem('isDemoAdmin')) && (
+                <Badge colorScheme="orange">DEMO MODE</Badge>
+              )}
             </HStack>
           </VStack>
           <HStack spacing={3}>
