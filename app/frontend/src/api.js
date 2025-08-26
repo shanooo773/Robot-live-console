@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Backend API (authentication, booking, and video serving)
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8000",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
 });
 
 // Authentication API

@@ -29,7 +29,7 @@ const robotNames = {
   hand: { name: "Robot Hand", emoji: "🤲" },
 };
 
-const VPS_URL = process.env.REACT_APP_VPS_URL || "http://172.104.207.139";
+const VPS_URL = import.meta.env.VITE_VPS_URL || "http://172.104.207.139";
 
 const CodeEditor = ({ user, slot, authToken, onBack, onLogout }) => {
   const editorRef = useRef();
