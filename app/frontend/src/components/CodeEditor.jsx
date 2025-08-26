@@ -47,16 +47,33 @@ const CodeEditor = ({ user, slot, authToken, onBack, onLogout }) => {
     // Check if user has access to Monaco Editor
     const checkUserAccess = async () => {
       try {
-        const accessData = await checkAccess(authToken);
-        setHasAccess(accessData.has_access);
-        if (!accessData.has_access) {
-          toast({
-            title: "Access Denied",
-            description: "You need to complete a booking before accessing the development console.",
-            status: "warning",
-            duration: 5000,
-            isClosable: true,
-          });
+        // Check for demo user access
+        const isDemoUser = localStorage.getItem('isDemoUser');
+        const isDemoAdmin = localStorage.getItem('isDemoAdmin');
+        const isDummy = localStorage.getItem('isDummy');
+        
+        if (isDemoUser || isDemoAdmin || isDummy || user?.isDemoUser || user?.isDemoAdmin) {
+          // Demo users get immediate access
+          setHasAccess(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Regular access check for non-demo users
+        if (authToken) {
+          const accessData = await checkAccess(authToken);
+          setHasAccess(accessData.has_access);
+          if (!accessData.has_access) {
+            toast({
+              title: "Access Denied",
+              description: "You need to complete a booking before accessing the development console.",
+              status: "warning",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        } else {
+          setHasAccess(false);
         }
       } catch (error) {
         console.error("Access check failed:", error);
@@ -73,7 +90,7 @@ const CodeEditor = ({ user, slot, authToken, onBack, onLogout }) => {
     };
 
     checkUserAccess();
-  }, [authToken, toast]);
+  }, [authToken, user, toast]);
 
   const onMount = (editor) => {
     editorRef.current = editor;
@@ -162,7 +179,14 @@ const CodeEditor = ({ user, slot, authToken, onBack, onLogout }) => {
                   <HStack>
                     <Avatar size="sm" name={user.name} />
                     <VStack align="start" spacing={0}>
-                      <Text color="white" fontWeight="bold">{user.name}</Text>
+                      <HStack spacing={2}>
+                        <Text color="white" fontWeight="bold">{user.name}</Text>
+                        {(user?.isDemoUser || user?.isDemoAdmin || localStorage.getItem('isDemoUser') || localStorage.getItem('isDemoAdmin')) && (
+                          <Badge colorScheme="orange" fontSize="xs">
+                            DEMO MODE
+                          </Badge>
+                        )}
+                      </HStack>
                       <Text color="gray.400" fontSize="sm">{user.email}</Text>
                     </VStack>
                   </HStack>

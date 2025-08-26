@@ -224,6 +224,9 @@ const BookingPage = ({ user, authToken, onBooking, onLogout, onAdminAccess }) =>
               {user.role === 'admin' && (
                 <Badge colorScheme="purple" ml={2}>Admin</Badge>
               )}
+              {(user?.isDemoUser || user?.isDemoAdmin || localStorage.getItem('isDemoUser') || localStorage.getItem('isDemoAdmin')) && (
+                <Badge colorScheme="orange" ml={2}>DEMO MODE</Badge>
+              )}
             </HStack>
           </VStack>
           <HStack spacing={3}>
@@ -242,6 +245,41 @@ const BookingPage = ({ user, authToken, onBooking, onLogout, onAdminAccess }) =>
         <Box w="full">
           <ServiceStatus showDetails={false} />
         </Box>
+
+        {/* Demo User Direct Access */}
+        {(user?.isDemoUser || user?.isDemoAdmin || localStorage.getItem('isDemoUser') || localStorage.getItem('isDemoAdmin')) && (
+          <Card w="full" bg="orange.900" border="2px solid" borderColor="orange.500">
+            <CardHeader>
+              <HStack justify="space-between" align="center">
+                <VStack align="start" spacing={1}>
+                  <Text fontSize="lg" fontWeight="bold" color="orange.100">
+                    🎯 Demo Mode - Unrestricted Access
+                  </Text>
+                  <Text color="orange.200" fontSize="sm">
+                    Skip bookings and access the development console directly
+                  </Text>
+                </VStack>
+                <Button
+                  colorScheme="orange"
+                  size="lg"
+                  onClick={() => onBooking({
+                    id: 'demo_direct_access',
+                    robotType: 'turtlebot',
+                    date: new Date().toISOString().split('T')[0],
+                    startTime: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+                    endTime: 'Unlimited',
+                    bookingId: 'demo',
+                    available: true,
+                    bookedBy: user.name,
+                    isDemoAccess: true
+                  })}
+                >
+                  Enter Development Console
+                </Button>
+              </HStack>
+            </CardHeader>
+          </Card>
+        )}
 
         {/* Filters */}
         <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">

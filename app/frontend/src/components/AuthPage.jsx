@@ -136,16 +136,34 @@ const AuthPage = ({ onAuth, onBack }) => {
     }
   };
 
-  const handleDummyLogin = () => {
-    const dummyUser = {
-      username: "test_user",
-      email: "dummy@example.com",
-      role: "tester",
+  const handleDemoUserLogin = () => {
+    const demoUser = {
+      username: "demo_user",
+      name: "Demo User",
+      email: "demo.user@example.com",
+      role: "user",
+      isDemoUser: true,
     };
-    // Save dummy session flag
-    localStorage.setItem("isDummy", "true");
+    // Save demo user session flags
+    localStorage.setItem("isDemoUser", "true");
+    localStorage.setItem("isDummy", "true"); // Keep for backward compatibility
     // Trigger login state in parent
-    onAuth(dummyUser);
+    onAuth(demoUser);
+  };
+
+  const handleDemoAdminLogin = () => {
+    const demoAdmin = {
+      username: "demo_admin",
+      name: "Demo Admin",
+      email: "demo.admin@example.com",
+      role: "admin",
+      isDemoAdmin: true,
+    };
+    // Save demo admin session flags
+    localStorage.setItem("isDemoAdmin", "true");
+    localStorage.setItem("isDummy", "true"); // Keep for backward compatibility
+    // Trigger login state in parent
+    onAuth(demoAdmin);
   };
 
   return (
@@ -219,17 +237,34 @@ const AuthPage = ({ onAuth, onBack }) => {
                         Sign In
                       </Button>
 
-                      <Button
-                        type="button"
-                        onClick={handleDummyLogin}
-                        variant="outline"
-                        colorScheme="gray"
-                        size="lg"
-                        w="full"
-                        marginTop="10px"
-                      >
-                        Dummy Sign-In
-                      </Button>
+                      {/* Demo Login Options */}
+                      <VStack spacing={2} w="full" marginTop="20px">
+                        <Text color="gray.400" fontSize="sm" fontWeight="bold">
+                          Demo Access
+                        </Text>
+                        <Button
+                          type="button"
+                          onClick={handleDemoUserLogin}
+                          variant="outline"
+                          colorScheme="green"
+                          size="lg"
+                          w="full"
+                          leftIcon={<Text>🎯</Text>}
+                        >
+                          Demo User - Full Access
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleDemoAdminLogin}
+                          variant="outline"
+                          colorScheme="purple"
+                          size="lg"
+                          w="full"
+                          leftIcon={<Text>👑</Text>}
+                        >
+                          Demo Admin - Dashboard Access
+                        </Button>
+                      </VStack>
                     </VStack>
                   </form>
                 </TabPanel>
