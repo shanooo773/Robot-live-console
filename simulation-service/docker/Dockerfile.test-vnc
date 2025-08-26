@@ -1,0 +1,124 @@
+# Alternative VNC-focused Dockerfile for testing
+# This version uses Ubuntu base and focuses specifically on VNC/NoVNC functionality
+
+FROM ubuntu:20.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install essential packages first (minimal set)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install VNC and GUI essentials
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tigervnc-standalone-server \
+    openbox \
+    xterm \
+    python3 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install NoVNC
+RUN cd /opt && \
+    wget -q https://github.com/novnc/noVNC/archive/v1.3.0.tar.gz && \
+    tar xzf v1.3.0.tar.gz && \
+    mv noVNC-1.3.0 novnc && \
+    rm v1.3.0.tar.gz && \
+    cd novnc && \
+    wget -q https://github.com/novnc/websockify/archive/v0.10.0.tar.gz && \
+    tar xzf v0.10.0.tar.gz -C utils/ && \
+    mv utils/websockify-0.10.0 utils/websockify && \
+    rm v0.10.0.tar.gz
+
+# Set up VNC configuration
+RUN mkdir -p /root/.vnc && \
+    echo "gazebo" | vncpasswd -f > /root/.vnc/passwd && \
+    chmod 600 /root/.vnc/passwd
+
+# Create a simple test GUI application
+RUN echo '#!/bin/bash\n\
+export DISPLAY=:1\n\
+# Start window manager\n\
+openbox-session &\n\
+# Start a simple GUI application for testing\n\
+sleep 2\n\
+xterm -title "VNC Test - Success!" -geometry 80x24+100+100 &\n\
+# Keep session alive\n\
+while true; do sleep 60; done' > /root/.vnc/xstartup && \
+    chmod +x /root/.vnc/xstartup
+
+# Create VNC startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "Starting VNC/NoVNC Test Setup..."\n\
+\n\
+# Create necessary directories\n\
+mkdir -p /tmp /root/.vnc\n\
+\n\
+# Kill any existing VNC servers\n\
+vncserver -kill :1 2>/dev/null || true\n\
+sleep 1\n\
+\n\
+# Start VNC server\n\
+echo "Starting VNC server on display :1..."\n\
+vncserver :1 -geometry 1280x720 -depth 24 -SecurityTypes None -localhost no\n\
+\n\
+# Wait for VNC to start\n\
+sleep 3\n\
+\n\
+# Verify VNC is running\n\
+if ! pgrep -f "Xvnc.*:1" > /dev/null; then\n\
+    echo "ERROR: VNC server failed to start"\n\
+    exit 1\n\
+fi\n\
+\n\
+echo "VNC server started successfully"\n\
+\n\
+# Start NoVNC websocket proxy\n\
+echo "Starting NoVNC web interface..."\n\
+cd /opt/novnc\n\
+python3 utils/websockify/websockify.py --web . 8080 localhost:5901 &\n\
+WEBSOCKIFY_PID=$!\n\
+\n\
+# Wait for websockify to start\n\
+sleep 2\n\
+\n\
+if ! pgrep -f websockify > /dev/null; then\n\
+    echo "ERROR: NoVNC websockify failed to start"\n\
+    exit 1\n\
+fi\n\
+\n\
+echo "=== VNC/NoVNC Test Setup Complete ==="\n\
+echo "VNC server started on display :1 (port 5901)"\n\
+echo "NoVNC web interface available on port 8080"\n\
+echo "Access via browser: http://localhost:8080/vnc.html"\n\
+echo "VNC Password: gazebo"\n\
+echo "===================================="\n\
+\n\
+# Function to cleanup\n\
+cleanup() {\n\
+    echo "Shutting down services..."\n\
+    kill $WEBSOCKIFY_PID 2>/dev/null || true\n\
+    vncserver -kill :1 2>/dev/null || true\n\
+    exit 0\n\
+}\n\
+\n\
+trap cleanup SIGINT SIGTERM\n\
+\n\
+# Keep container running\n\
+echo "Container is ready. Press Ctrl+C to stop."\n\
+tail -f /dev/null' > /start-test-vnc.sh && chmod +x /start-test-vnc.sh
+
+# Expose VNC and NoVNC ports
+EXPOSE 5901 8080
+
+# Default command
+CMD ["/start-test-vnc.sh"]

@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Robot Live Console - Architecture Demonstration
+echo "🚀 Robot Live Console - Separated Architecture Demonstration"
+echo "============================================================="
+
+echo ""
+echo "📁 Project Structure:"
+echo "Robot-live-console/"
+echo "├── admin-backend/       # 🔐 Lightweight Admin & Booking Backend"
+echo "├── simulation-service/  # 🤖 Resource-Intensive Simulation Stack"  
+echo "├── frontend/           # 💻 React Frontend (unchanged UI/UX)"
+echo "└── deploy-all.sh       # 🚀 Complete deployment script"
+
+echo ""
+echo "🎯 Before vs After:"
+echo ""
+echo "BEFORE (Monolithic):"
+echo "┌─────────────────────────────────────┐"
+echo "│  Single Backend (Port 8000)        │"
+echo "│  ├── Auth & Booking                │"
+echo "│  ├── Admin Dashboard               │"
+echo "│  └── Docker/ROS/Gazebo Simulation │"
+echo "└─────────────────────────────────────┘"
+
+echo ""
+echo "AFTER (Separated):"
+echo "┌─────────────────────┐  ┌─────────────────────────┐"
+echo "│  Admin Backend      │  │  Simulation Service     │"
+echo "│  (Port 8000)        │  │  (Port 8001)           │"
+echo "│  ├── Auth & Booking │  │  ├── Docker/ROS/Gazebo │"
+echo "│  ├── Admin Dashboard│  │  ├── Video Recording   │"
+echo "│  └── Lightweight    │  │  └── Resource Intensive│"
+echo "└─────────────────────┘  └─────────────────────────┘"
+echo "         │                           │"
+echo "         └────── Frontend ───────────┘"
+echo "              (Port 3000)"
+
+echo ""
+echo "✅ Key Benefits:"
+echo "   🔐 Admin Backend: ~50MB RAM, VPS-ready, always available"
+echo "   🤖 Simulation: Isolated, scalable, optional"
+echo "   💻 Frontend: Same UI/UX, smart routing"
+
+echo ""
+echo "🚀 Usage Examples:"
+
+echo ""
+echo "1️⃣ Deploy lightweight admin only (perfect for small VPS):"
+echo "   cd admin-backend && ./deploy.sh && python main.py"
+echo "   → Authentication, booking, admin dashboard available"
+
+echo ""
+echo "2️⃣ Deploy full system with simulation:"
+echo "   ./deploy-all.sh"
+echo "   → Complete robot development environment"
+
+echo ""
+echo "3️⃣ Scale independently:"
+echo "   Admin Backend → $5/month VPS"
+echo "   Simulation → GPU server with Docker"
+echo "   Frontend → CDN/Static hosting"
+
+echo ""
+echo "🎉 Result: Clean, maintainable, scalable architecture!"
+echo "   ✅ All original functionality preserved"
+echo "   ✅ Same UI/UX experience for users"
+echo "   ✅ Independent deployment and scaling"
+echo "   ✅ Resource optimization"
+
+echo ""
+echo "🧪 Test the architecture:"
+echo "   ./test-architecture.sh"
