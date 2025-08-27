@@ -123,3 +123,64 @@ export const getAvailableFeatures = async () => {
   const response = await API.get("/health/features");
   return response.data;
 };
+
+// Message API
+export const submitContactMessage = async (messageData) => {
+  const response = await API.post("/messages", messageData);
+  return response.data;
+};
+
+export const getAllMessages = async (token) => {
+  const response = await API.get("/messages", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const updateMessageStatus = async (messageId, status, token) => {
+  const response = await API.put(`/messages/${messageId}/status`, { status }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const deleteMessage = async (messageId, token) => {
+  const response = await API.delete(`/messages/${messageId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+// Announcement API
+export const createAnnouncement = async (announcementData, token) => {
+  const response = await API.post("/announcements", announcementData, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const getAllAnnouncements = async (token) => {
+  const response = await API.get("/announcements", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const getActiveAnnouncements = async () => {
+  const response = await API.get("/announcements/active");
+  return response.data;
+};
+
+export const updateAnnouncement = async (announcementId, announcementData, token) => {
+  const response = await API.put(`/announcements/${announcementId}`, announcementData, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const deleteAnnouncement = async (announcementId, token) => {
+  const response = await API.delete(`/announcements/${announcementId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};

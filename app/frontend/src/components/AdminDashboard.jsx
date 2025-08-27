@@ -35,20 +35,64 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
+  Input,
+  Textarea,
+  Select,
+  Switch,
+  IconButton,
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
-import { getAllUsers, getAllBookings, getAdminStats, updateBookingStatus, deleteBooking } from "../api";
-import { ChevronDownIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import { 
+  getAllUsers, 
+  getAllBookings, 
+  getAdminStats, 
+  updateBookingStatus, 
+  deleteBooking, 
+  getAllMessages, 
+  updateMessageStatus, 
+  deleteMessage,
+  getAllAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement
+} from "../api";
+import { ChevronDownIcon, DeleteIcon, EditIcon, AddIcon, ViewIcon } from "@chakra-ui/icons";
 
 const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: "",
+    content: "",
+    priority: "normal",
+    is_active: true
+  });
+  const [isEditingAnnouncement, setIsEditingAnnouncement] = useState(false);
   const toast = useToast();
   
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { 
+    isOpen: isMessageOpen, 
+    onOpen: onMessageOpen, 
+    onClose: onMessageClose 
+  } = useDisclosure();
   const cancelRef = useRef();
 
   useEffect(() => {
@@ -58,15 +102,19 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
   const loadDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [statsData, usersData, bookingsData] = await Promise.all([
+      const [statsData, usersData, bookingsData, messagesData, announcementsData] = await Promise.all([
         getAdminStats(authToken),
         getAllUsers(authToken),
-        getAllBookings(authToken)
+        getAllBookings(authToken),
+        getAllMessages(authToken),
+        getAllAnnouncements(authToken)
       ]);
       
       setStats(statsData);
       setUsers(usersData);
       setBookings(bookingsData);
+      setMessages(messagesData);
+      setAnnouncements(announcementsData);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -133,6 +181,140 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
     onOpen();
   };
 
+  // Message handlers
+  const handleUpdateMessageStatus = async (messageId, newStatus) => {
+    try {
+      await updateMessageStatus(messageId, newStatus, authToken);
+      await loadDashboardData();
+      toast({
+        title: "Message updated",
+        description: `Message marked as ${newStatus}`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error updating message:', error);
+      toast({
+        title: "Update failed",
+        description: "Failed to update message status",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      await deleteMessage(messageId, authToken);
+      await loadDashboardData();
+      toast({
+        title: "Message deleted",
+        description: "Message has been successfully deleted",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete message",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const viewMessage = (message) => {
+    setSelectedMessage(message);
+    onMessageOpen();
+  };
+
+  // Announcement handlers
+  const openAnnouncementModal = (announcement = null) => {
+    if (announcement) {
+      setAnnouncementForm({
+        title: announcement.title,
+        content: announcement.content,
+        priority: announcement.priority,
+        is_active: announcement.is_active
+      });
+      setSelectedAnnouncement(announcement);
+      setIsEditingAnnouncement(true);
+    } else {
+      setAnnouncementForm({
+        title: "",
+        content: "",
+        priority: "normal",
+        is_active: true
+      });
+      setSelectedAnnouncement(null);
+      setIsEditingAnnouncement(false);
+    }
+    setIsAnnouncementModalOpen(true);
+  };
+
+  const handleAnnouncementSubmit = async () => {
+    try {
+      if (isEditingAnnouncement && selectedAnnouncement) {
+        await updateAnnouncement(selectedAnnouncement.id, announcementForm, authToken);
+        toast({
+          title: "Announcement updated",
+          description: "Announcement has been updated successfully",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        await createAnnouncement(announcementForm, authToken);
+        toast({
+          title: "Announcement created",
+          description: "New announcement has been created successfully",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+      setIsAnnouncementModalOpen(false);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error saving announcement:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save announcement",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId) => {
+    try {
+      await deleteAnnouncement(announcementId, authToken);
+      await loadDashboardData();
+      toast({
+        title: "Announcement deleted",
+        description: "Announcement has been successfully deleted",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete announcement",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -184,7 +366,7 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
 
         {/* Statistics Cards */}
         {stats && (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} w="full">
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} w="full">
             <Card bg="blue.900" border="1px solid" borderColor="blue.600">
               <CardBody>
                 <Stat>
@@ -211,6 +393,26 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
                   <StatLabel color="purple.100">Active Bookings</StatLabel>
                   <StatNumber color="white" fontSize="3xl">{stats.active_bookings}</StatNumber>
                   <StatHelpText color="purple.200">Currently active</StatHelpText>
+                </Stat>
+              </CardBody>
+            </Card>
+
+            <Card bg="cyan.900" border="1px solid" borderColor="cyan.600">
+              <CardBody>
+                <Stat>
+                  <StatLabel color="cyan.100">Messages</StatLabel>
+                  <StatNumber color="white" fontSize="3xl">{stats.total_messages || 0}</StatNumber>
+                  <StatHelpText color="cyan.200">{stats.unread_messages || 0} unread</StatHelpText>
+                </Stat>
+              </CardBody>
+            </Card>
+
+            <Card bg="teal.900" border="1px solid" borderColor="teal.600">
+              <CardBody>
+                <Stat>
+                  <StatLabel color="teal.100">Announcements</StatLabel>
+                  <StatNumber color="white" fontSize="3xl">{stats.total_announcements || 0}</StatNumber>
+                  <StatHelpText color="teal.200">{stats.active_announcements || 0} active</StatHelpText>
                 </Stat>
               </CardBody>
             </Card>
@@ -344,6 +546,153 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
             </TableContainer>
           </CardBody>
         </Card>
+
+        {/* Messages */}
+        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
+          <CardHeader>
+            <HStack justify="space-between">
+              <Text fontSize="lg" fontWeight="bold" color="white">
+                Contact Messages
+              </Text>
+              <Badge colorScheme="cyan" fontSize="sm">
+                {messages.filter(m => m.status === 'unread').length} unread
+              </Badge>
+            </HStack>
+          </CardHeader>
+          <CardBody>
+            <TableContainer>
+              <Table variant="simple" size="sm">
+                <Thead>
+                  <Tr>
+                    <Th color="gray.300">Name</Th>
+                    <Th color="gray.300">Email</Th>
+                    <Th color="gray.300">Status</Th>
+                    <Th color="gray.300">Date</Th>
+                    <Th color="gray.300">Actions</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {messages.map((message) => (
+                    <Tr key={message.id}>
+                      <Td color="white">{message.name}</Td>
+                      <Td color="gray.300">{message.email}</Td>
+                      <Td>
+                        <Badge colorScheme={message.status === 'read' ? 'green' : 'orange'}>
+                          {message.status}
+                        </Badge>
+                      </Td>
+                      <Td color="gray.300">{formatDate(message.created_at)}</Td>
+                      <Td>
+                        <HStack spacing={2}>
+                          <IconButton
+                            size="xs"
+                            icon={<ViewIcon />}
+                            onClick={() => viewMessage(message)}
+                            aria-label="View message"
+                          />
+                          <Menu>
+                            <MenuButton as={Button} size="xs" rightIcon={<ChevronDownIcon />}>
+                              Status
+                            </MenuButton>
+                            <MenuList>
+                              <MenuItem onClick={() => handleUpdateMessageStatus(message.id, 'read')}>
+                                Mark as Read
+                              </MenuItem>
+                              <MenuItem onClick={() => handleUpdateMessageStatus(message.id, 'unread')}>
+                                Mark as Unread
+                              </MenuItem>
+                            </MenuList>
+                          </Menu>
+                          <IconButton
+                            size="xs"
+                            colorScheme="red"
+                            icon={<DeleteIcon />}
+                            onClick={() => handleDeleteMessage(message.id)}
+                            aria-label="Delete message"
+                          />
+                        </HStack>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          </CardBody>
+        </Card>
+
+        {/* Announcements */}
+        <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
+          <CardHeader>
+            <HStack justify="space-between">
+              <Text fontSize="lg" fontWeight="bold" color="white">
+                Announcements
+              </Text>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                leftIcon={<AddIcon />}
+                onClick={() => openAnnouncementModal()}
+              >
+                New Announcement
+              </Button>
+            </HStack>
+          </CardHeader>
+          <CardBody>
+            <TableContainer>
+              <Table variant="simple" size="sm">
+                <Thead>
+                  <Tr>
+                    <Th color="gray.300">Title</Th>
+                    <Th color="gray.300">Priority</Th>
+                    <Th color="gray.300">Status</Th>
+                    <Th color="gray.300">Created</Th>
+                    <Th color="gray.300">Actions</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {announcements.map((announcement) => (
+                    <Tr key={announcement.id}>
+                      <Td color="white">{announcement.title}</Td>
+                      <Td>
+                        <Badge 
+                          colorScheme={
+                            announcement.priority === 'high' ? 'red' : 
+                            announcement.priority === 'normal' ? 'blue' : 'gray'
+                          }
+                        >
+                          {announcement.priority}
+                        </Badge>
+                      </Td>
+                      <Td>
+                        <Badge colorScheme={announcement.is_active ? 'green' : 'gray'}>
+                          {announcement.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </Td>
+                      <Td color="gray.300">{formatDate(announcement.created_at)}</Td>
+                      <Td>
+                        <HStack spacing={2}>
+                          <IconButton
+                            size="xs"
+                            icon={<EditIcon />}
+                            onClick={() => openAnnouncementModal(announcement)}
+                            aria-label="Edit announcement"
+                          />
+                          <IconButton
+                            size="xs"
+                            colorScheme="red"
+                            icon={<DeleteIcon />}
+                            onClick={() => handleDeleteAnnouncement(announcement.id)}
+                            aria-label="Delete announcement"
+                          />
+                        </HStack>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          </CardBody>
+        </Card>
       </VStack>
 
       {/* Delete Confirmation Dialog */}
@@ -381,6 +730,112 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
+      {/* Message View Modal */}
+      <Modal isOpen={isMessageOpen} onClose={onMessageClose} size="lg">
+        <ModalOverlay />
+        <ModalContent bg="gray.800" border="1px solid" borderColor="gray.600">
+          <ModalHeader color="white">Contact Message</ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody>
+            {selectedMessage && (
+              <VStack spacing={4} align="start">
+                <Text color="white"><strong>From:</strong> {selectedMessage.name}</Text>
+                <Text color="white"><strong>Email:</strong> {selectedMessage.email}</Text>
+                <Text color="white"><strong>Date:</strong> {formatDate(selectedMessage.created_at)}</Text>
+                <Text color="white"><strong>Status:</strong> 
+                  <Badge ml={2} colorScheme={selectedMessage.status === 'read' ? 'green' : 'orange'}>
+                    {selectedMessage.status}
+                  </Badge>
+                </Text>
+                <Divider />
+                <Text color="white"><strong>Message:</strong></Text>
+                <Text color="gray.300" whiteSpace="pre-wrap">
+                  {selectedMessage.message}
+                </Text>
+              </VStack>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" onClick={onMessageClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Announcement Create/Edit Modal */}
+      <Modal isOpen={isAnnouncementModalOpen} onClose={() => setIsAnnouncementModalOpen(false)} size="lg">
+        <ModalOverlay />
+        <ModalContent bg="gray.800" border="1px solid" borderColor="gray.600">
+          <ModalHeader color="white">
+            {isEditingAnnouncement ? 'Edit Announcement' : 'Create New Announcement'}
+          </ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl>
+                <FormLabel color="white">Title</FormLabel>
+                <Input
+                  value={announcementForm.title}
+                  onChange={(e) => setAnnouncementForm({...announcementForm, title: e.target.value})}
+                  placeholder="Enter announcement title"
+                  bg="gray.700"
+                  color="white"
+                  borderColor="gray.600"
+                />
+              </FormControl>
+              
+              <FormControl>
+                <FormLabel color="white">Content</FormLabel>
+                <Textarea
+                  value={announcementForm.content}
+                  onChange={(e) => setAnnouncementForm({...announcementForm, content: e.target.value})}
+                  placeholder="Enter announcement content"
+                  rows={5}
+                  bg="gray.700"
+                  color="white"
+                  borderColor="gray.600"
+                />
+              </FormControl>
+              
+              <FormControl>
+                <FormLabel color="white">Priority</FormLabel>
+                <Select
+                  value={announcementForm.priority}
+                  onChange={(e) => setAnnouncementForm({...announcementForm, priority: e.target.value})}
+                  bg="gray.700"
+                  color="white"
+                  borderColor="gray.600"
+                >
+                  <option value="low">Low</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                </Select>
+              </FormControl>
+              
+              <FormControl display="flex" alignItems="center">
+                <FormLabel color="white" mb="0">
+                  Active
+                </FormLabel>
+                <Switch
+                  isChecked={announcementForm.is_active}
+                  onChange={(e) => setAnnouncementForm({...announcementForm, is_active: e.target.checked})}
+                  colorScheme="blue"
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={() => setIsAnnouncementModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button colorScheme="blue" onClick={handleAnnouncementSubmit}>
+              {isEditingAnnouncement ? 'Update' : 'Create'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Container>
   );
 };
