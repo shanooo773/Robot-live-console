@@ -19,7 +19,7 @@ import {
   FormLabel,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { createBooking, getUserBookings, getBookingSchedule } from "../api";
+import { createBooking, getUserBookings, getBookingSchedule, getActiveAnnouncements } from "../api";
 import ServiceStatus from "./ServiceStatus";
 
 // Dummy data for available time slots
@@ -78,6 +78,7 @@ const BookingPage = ({ user, authToken, onBooking, onLogout, onAdminAccess }) =>
   const [selectedRobot, setSelectedRobot] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [userBookings, setUserBookings] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const toast = useToast();
 
   useEffect(() => {
@@ -89,8 +90,9 @@ const BookingPage = ({ user, authToken, onBooking, onLogout, onAdminAccess }) =>
     const today = new Date().toISOString().split('T')[0];
     setSelectedDate(today);
     
-    // Load user bookings and booked slots
+    // Load user bookings, booked slots, and announcements
     loadBookings();
+    loadAnnouncements();
   }, [authToken]);
 
   const loadBookings = async () => {
@@ -113,6 +115,15 @@ const BookingPage = ({ user, authToken, onBooking, onLogout, onAdminAccess }) =>
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
+    }
+  };
+
+  const loadAnnouncements = async () => {
+    try {
+      const response = await getActiveAnnouncements();
+      setAnnouncements(response.announcements || []);
+    } catch (error) {
+      console.error('Error loading announcements:', error);
     }
   };
 
@@ -245,6 +256,52 @@ const BookingPage = ({ user, authToken, onBooking, onLogout, onAdminAccess }) =>
         <Box w="full">
           <ServiceStatus showDetails={false} />
         </Box>
+
+        {/* Active Announcements */}
+        {announcements.length > 0 && (
+          <VStack spacing={4} w="full">
+            {announcements.map((announcement) => (
+              <Card 
+                key={announcement.id} 
+                w="full" 
+                bg={
+                  announcement.priority === 'high' ? 'red.900' : 
+                  announcement.priority === 'normal' ? 'blue.900' : 'gray.800'
+                }
+                border="1px solid" 
+                borderColor={
+                  announcement.priority === 'high' ? 'red.500' : 
+                  announcement.priority === 'normal' ? 'blue.500' : 'gray.600'
+                }
+              >
+                <CardBody>
+                  <VStack align="start" spacing={2}>
+                    <HStack justify="space-between" w="full">
+                      <Text fontSize="lg" fontWeight="bold" color="white">
+                        📢 {announcement.title}
+                      </Text>
+                      <Badge 
+                        colorScheme={
+                          announcement.priority === 'high' ? 'red' : 
+                          announcement.priority === 'normal' ? 'blue' : 'gray'
+                        }
+                        size="sm"
+                      >
+                        {announcement.priority}
+                      </Badge>
+                    </HStack>
+                    <Text color="gray.300" whiteSpace="pre-wrap">
+                      {announcement.content}
+                    </Text>
+                    <Text color="gray.500" fontSize="sm">
+                      {new Date(announcement.created_at).toLocaleDateString()}
+                    </Text>
+                  </VStack>
+                </CardBody>
+              </Card>
+            ))}
+          </VStack>
+        )}
 
         {/* Demo User Direct Access */}
         {(user?.isDemoUser || user?.isDemoAdmin || localStorage.getItem('isDemoUser') || localStorage.getItem('isDemoAdmin')) && (
