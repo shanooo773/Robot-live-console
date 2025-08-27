@@ -97,6 +97,46 @@ class BookingResponse(BaseModel):
 class BookingUpdate(BaseModel):
     status: str
 
+# Message Models
+class MessageCreate(BaseModel):
+    name: str
+    email: str
+    message: str
+
+class MessageResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    message: str
+    status: str
+    created_at: str
+
+class MessageUpdate(BaseModel):
+    status: str
+
+# Announcement Models
+class AnnouncementCreate(BaseModel):
+    title: str
+    content: str
+    priority: str = "normal"
+
+class AnnouncementUpdate(BaseModel):
+    title: str
+    content: str
+    priority: str
+    is_active: bool
+
+class AnnouncementResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    priority: str
+    is_active: bool
+    created_by: int
+    created_by_name: str
+    created_at: str
+    updated_at: str
+
 # API Endpoints
 
 @app.get("/")
@@ -188,18 +228,112 @@ async def get_admin_stats(current_user: dict = Depends(require_admin)):
     """Get admin dashboard statistics"""
     users = db.get_all_users()
     bookings = db.get_all_bookings()
+    messages = db.get_all_messages()
+    announcements = db.get_all_announcements()
     
     total_users = len(users)
     total_bookings = len(bookings)
     active_bookings = len([b for b in bookings if b["status"] == "active"])
+    total_messages = len(messages)
+    unread_messages = len([m for m in messages if m["status"] == "unread"])
+    total_announcements = len(announcements)
+    active_announcements = len([a for a in announcements if a["is_active"]])
     
     return {
         "total_users": total_users,
         "total_bookings": total_bookings,
         "active_bookings": active_bookings,
+        "total_messages": total_messages,
+        "unread_messages": unread_messages,
+        "total_announcements": total_announcements,
+        "active_announcements": active_announcements,
         "recent_users": users[:5],  # 5 most recent users
-        "recent_bookings": bookings[:10]  # 10 most recent bookings
+        "recent_bookings": bookings[:10],  # 10 most recent bookings
+        "recent_messages": messages[:10]  # 10 most recent messages
     }
+
+# Message Endpoints
+@app.post("/messages", response_model=MessageResponse)
+async def create_message(message_data: MessageCreate):
+    """Submit a contact message (public)"""
+    message = db.create_message(
+        name=message_data.name,
+        email=message_data.email,
+        message=message_data.message
+    )
+    return MessageResponse(**message)
+
+@app.get("/messages", response_model=List[MessageResponse])
+async def get_all_messages(current_user: dict = Depends(require_admin)):
+    """Get all contact messages (admin only)"""
+    messages = db.get_all_messages()
+    return [MessageResponse(**message) for message in messages]
+
+@app.put("/messages/{message_id}/status")
+async def update_message_status(message_id: int, message_data: MessageUpdate, current_user: dict = Depends(require_admin)):
+    """Update message status (admin only)"""
+    success = db.update_message_status(message_id, message_data.status)
+    if not success:
+        raise HTTPException(status_code=404, detail="Message not found")
+    return {"message": "Message status updated successfully"}
+
+@app.delete("/messages/{message_id}")
+async def delete_message(message_id: int, current_user: dict = Depends(require_admin)):
+    """Delete a message (admin only)"""
+    success = db.delete_message(message_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Message not found")
+    return {"message": "Message deleted successfully"}
+
+# Announcement Endpoints
+@app.post("/announcements", response_model=AnnouncementResponse)
+async def create_announcement(announcement_data: AnnouncementCreate, current_user: dict = Depends(require_admin)):
+    """Create a new announcement (admin only)"""
+    user_id = int(current_user["sub"])
+    announcement = db.create_announcement(
+        title=announcement_data.title,
+        content=announcement_data.content,
+        priority=announcement_data.priority,
+        created_by=user_id
+    )
+    # Add the created_by_name for the response
+    user = db.get_user_by_id(user_id)
+    announcement["created_by_name"] = user["name"] if user else "Unknown"
+    return AnnouncementResponse(**announcement)
+
+@app.get("/announcements", response_model=List[AnnouncementResponse])
+async def get_all_announcements(current_user: dict = Depends(require_admin)):
+    """Get all announcements (admin only)"""
+    announcements = db.get_all_announcements()
+    return [AnnouncementResponse(**announcement) for announcement in announcements]
+
+@app.get("/announcements/active")
+async def get_active_announcements():
+    """Get active announcements (public)"""
+    announcements = db.get_active_announcements()
+    return {"announcements": announcements}
+
+@app.put("/announcements/{announcement_id}", response_model=dict)
+async def update_announcement(announcement_id: int, announcement_data: AnnouncementUpdate, current_user: dict = Depends(require_admin)):
+    """Update an announcement (admin only)"""
+    success = db.update_announcement(
+        announcement_id=announcement_id,
+        title=announcement_data.title,
+        content=announcement_data.content,
+        priority=announcement_data.priority,
+        is_active=announcement_data.is_active
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return {"message": "Announcement updated successfully"}
+
+@app.delete("/announcements/{announcement_id}")
+async def delete_announcement(announcement_id: int, current_user: dict = Depends(require_admin)):
+    """Delete an announcement (admin only)"""
+    success = db.delete_announcement(announcement_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return {"message": "Announcement deleted successfully"}
 
 # Service Health Check Endpoints
 @app.get("/health")

@@ -55,8 +55,62 @@ import {
   FaGlobe,
   FaHandshake
 } from "react-icons/fa";
+import { useState } from "react";
+import { submitContactMessage } from "../api";
+import { useToast } from "@chakra-ui/react";
 
 const LandingPage = ({ onGetStarted }) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const toast = useToast();
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitMessage = async () => {
+    if (!formData.name || !formData.email || !formData.message) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await submitContactMessage(formData);
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for contacting us. We'll get back to you soon.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+      setFormData({ name: "", email: "", message: "" });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <Box 
       minH="100vh"
@@ -1377,6 +1431,9 @@ const LandingPage = ({ onGetStarted }) => {
                       Full Name
                     </FormLabel>
                     <Input
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
                       placeholder="Enter your full name"
                       size="lg"
                       borderColor="blue.200"
@@ -1390,7 +1447,10 @@ const LandingPage = ({ onGetStarted }) => {
                       Email Address
                     </FormLabel>
                     <Input
+                      name="email"
                       type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
                       placeholder="Enter your email address"
                       size="lg"
                       borderColor="blue.200"
@@ -1404,6 +1464,9 @@ const LandingPage = ({ onGetStarted }) => {
                       Message
                     </FormLabel>
                     <Textarea
+                      name="message"
+                      value={formData.message}
+                      onChange={handleInputChange}
                       placeholder="Tell us about your project and how we can help..."
                       rows={5}
                       resize="vertical"
@@ -1422,6 +1485,8 @@ const LandingPage = ({ onGetStarted }) => {
                     bgGradient="linear(135deg, cyan.400, blue.500)"
                     color="white"
                     boxShadow="0 8px 32px rgba(0, 255, 255, 0.3)"
+                    isLoading={isSubmitting}
+                    onClick={handleSubmitMessage}
                     _hover={{
                       bgGradient: "linear(135deg, cyan.300, blue.400)",
                       boxShadow: "0 12px 48px rgba(0, 255, 255, 0.4)",

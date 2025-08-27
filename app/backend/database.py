@@ -54,6 +54,33 @@ class DatabaseManager:
             )
         """)
         
+        # Messages table for contact form submissions
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                message TEXT NOT NULL,
+                status TEXT DEFAULT 'unread',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Announcements table for admin announcements
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                priority TEXT DEFAULT 'normal',
+                is_active BOOLEAN DEFAULT 1,
+                created_by INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (created_by) REFERENCES users (id)
+            )
+        """)
+        
         conn.commit()
         
         # Create default admin user if none exists
@@ -338,3 +365,203 @@ class DatabaseManager:
             }
             for booking in bookings
         ]
+    
+    # Message management methods
+    def create_message(self, name: str, email: str, message: str) -> Dict[str, Any]:
+        """Create a new contact message"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute("""
+                INSERT INTO messages (name, email, message)
+                VALUES (?, ?, ?)
+            """, (name, email, message))
+            
+            message_id = cursor.lastrowid
+            conn.commit()
+            
+            return {
+                "id": message_id,
+                "name": name,
+                "email": email,
+                "message": message,
+                "status": "unread",
+                "created_at": datetime.now().isoformat()
+            }
+        finally:
+            conn.close()
+    
+    def get_all_messages(self) -> List[Dict[str, Any]]:
+        """Get all contact messages (admin only)"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, name, email, message, status, created_at
+            FROM messages ORDER BY created_at DESC
+        """)
+        
+        messages = cursor.fetchall()
+        conn.close()
+        
+        return [
+            {
+                "id": message[0],
+                "name": message[1],
+                "email": message[2],
+                "message": message[3],
+                "status": message[4],
+                "created_at": message[5]
+            }
+            for message in messages
+        ]
+    
+    def update_message_status(self, message_id: int, status: str) -> bool:
+        """Update message status"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE messages SET status = ? WHERE id = ?
+        """, (status, message_id))
+        
+        updated = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        
+        return updated
+    
+    def delete_message(self, message_id: int) -> bool:
+        """Delete a message"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM messages WHERE id = ?", (message_id,))
+        
+        deleted = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        
+        return deleted
+    
+    # Announcement management methods
+    def create_announcement(self, title: str, content: str, priority: str, created_by: int) -> Dict[str, Any]:
+        """Create a new announcement"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute("""
+                INSERT INTO announcements (title, content, priority, created_by)
+                VALUES (?, ?, ?, ?)
+            """, (title, content, priority, created_by))
+            
+            announcement_id = cursor.lastrowid
+            conn.commit()
+            
+            return {
+                "id": announcement_id,
+                "title": title,
+                "content": content,
+                "priority": priority,
+                "is_active": True,
+                "created_by": created_by,
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }
+        finally:
+            conn.close()
+    
+    def get_all_announcements(self) -> List[Dict[str, Any]]:
+        """Get all announcements"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT a.id, a.title, a.content, a.priority, a.is_active, 
+                   a.created_by, u.name, a.created_at, a.updated_at
+            FROM announcements a
+            JOIN users u ON a.created_by = u.id
+            ORDER BY a.created_at DESC
+        """)
+        
+        announcements = cursor.fetchall()
+        conn.close()
+        
+        return [
+            {
+                "id": announcement[0],
+                "title": announcement[1],
+                "content": announcement[2],
+                "priority": announcement[3],
+                "is_active": bool(announcement[4]),
+                "created_by": announcement[5],
+                "created_by_name": announcement[6],
+                "created_at": announcement[7],
+                "updated_at": announcement[8]
+            }
+            for announcement in announcements
+        ]
+    
+    def get_active_announcements(self) -> List[Dict[str, Any]]:
+        """Get active announcements for users"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, title, content, priority, created_at
+            FROM announcements 
+            WHERE is_active = 1
+            ORDER BY 
+                CASE priority 
+                    WHEN 'high' THEN 1 
+                    WHEN 'normal' THEN 2 
+                    WHEN 'low' THEN 3 
+                END,
+                created_at DESC
+        """)
+        
+        announcements = cursor.fetchall()
+        conn.close()
+        
+        return [
+            {
+                "id": announcement[0],
+                "title": announcement[1],
+                "content": announcement[2],
+                "priority": announcement[3],
+                "created_at": announcement[4]
+            }
+            for announcement in announcements
+        ]
+    
+    def update_announcement(self, announcement_id: int, title: str, content: str, priority: str, is_active: bool) -> bool:
+        """Update an announcement"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE announcements 
+            SET title = ?, content = ?, priority = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (title, content, priority, is_active, announcement_id))
+        
+        updated = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        
+        return updated
+    
+    def delete_announcement(self, announcement_id: int) -> bool:
+        """Delete an announcement"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM announcements WHERE id = ?", (announcement_id,))
+        
+        deleted = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        
+        return deleted
