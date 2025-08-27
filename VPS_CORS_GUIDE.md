@@ -76,6 +76,14 @@ VITE_SIMULATION_API_URL=http://your-vps-ip:8001
 
 ### 4. Testing
 After configuration, test that CORS is working:
+
+#### Automated Validation
+Run the included validation script:
+```bash
+./validate-cors-config.sh
+```
+
+#### Manual Testing
 1. Open browser developer tools
 2. Try to register/login
 3. Check that there are no CORS errors in console
