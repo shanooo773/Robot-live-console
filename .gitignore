@@ -46,6 +46,9 @@ backend/videos/*.mp4
 backend/temp/
 *.mp4
 videos/
+# Allow sample video files in app/videos for testing
+!app/videos/
+!app/videos/*.mp4
 
 # IDE files
 .vscode/
