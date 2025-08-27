@@ -72,7 +72,10 @@ class AuthService:
     def register_user(self, name: str, email: str, password: str) -> Dict[str, Any]:
         """Register a new user"""
         try:
+            logger.info(f"📝 Registration attempt for email: {email}")
             user = self.db.create_user(name, email, password)
+            logger.info(f"✅ User registered successfully: {email} (ID: {user['id']})")
+            
             token = self.auth_manager.create_access_token(
                 data={"sub": str(user["id"]), "email": user["email"], "role": user["role"]}
             )
@@ -82,14 +85,17 @@ class AuthService:
                 "user": user
             }
         except ValueError as e:
+            logger.warning(f"⚠️ Registration failed for {email}: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
-            logger.error(f"Registration failed: {e}")
+            logger.error(f"❌ Registration failed with exception for {email}: {e}")
             raise AuthServiceException(f"Registration failed: {str(e)}")
     
     def login_user(self, email: str, password: str) -> Dict[str, Any]:
         """Login user and return token"""
         try:
+            logger.info(f"🔐 Login attempt for email: {email}")
+            
             # First check if this is a demo user
             demo_user = self._check_demo_user(email, password)
             if demo_user:
@@ -108,7 +114,7 @@ class AuthService:
                 
                 token = self.auth_manager.create_access_token(data=token_data)
                 
-                logger.info(f"🎯 Demo user login: {email} with role {demo_user['role']}")
+                logger.info(f"🎯 Demo user login successful: {email} with role {demo_user['role']}")
                 return {
                     "access_token": token,
                     "token_type": "bearer",
@@ -116,10 +122,13 @@ class AuthService:
                 }
             
             # Otherwise, authenticate against database
+            logger.info(f"📊 Checking database authentication for: {email}")
             user = self.db.authenticate_user(email, password)
             if not user:
+                logger.warning(f"❌ Database authentication failed for: {email}")
                 raise HTTPException(status_code=401, detail="Invalid email or password")
             
+            logger.info(f"✅ Database authentication successful for: {email} (ID: {user['id']}, Role: {user['role']})")
             token = self.auth_manager.create_access_token(
                 data={"sub": str(user["id"]), "email": user["email"], "role": user["role"]}
             )
@@ -131,7 +140,7 @@ class AuthService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Login failed: {e}")
+            logger.error(f"❌ Login failed with exception for {email}: {e}")
             raise AuthServiceException(f"Login failed: {str(e)}")
     
     def get_user_by_token(self, token_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:

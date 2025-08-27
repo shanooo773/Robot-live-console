@@ -131,7 +131,11 @@ class DatabaseManager:
         user = cursor.fetchone()
         conn.close()
         
-        if user and self._verify_password(password, user[3]):
+        if not user:
+            # User not found in database
+            return None
+            
+        if self._verify_password(password, user[3]):
             return {
                 "id": user[0],
                 "name": user[1],
@@ -139,7 +143,9 @@ class DatabaseManager:
                 "role": user[4],
                 "created_at": user[5]
             }
-        return None
+        else:
+            # Password verification failed
+            return None
     
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Get user by ID"""
