@@ -367,6 +367,26 @@ def get_available_robots():
     }
 
 # Video serving and access control
+@app.get("/videos/available")
+async def get_available_videos(current_user: dict = Depends(get_current_user)):
+    """Get list of videos available to the current user"""
+    booking_service = service_manager.get_booking_service()
+    user_id = int(current_user["sub"])
+    
+    # Get user's completed bookings
+    bookings = booking_service.get_user_bookings(user_id)
+    completed_bookings = [b for b in bookings if b["status"] == "completed"]
+    
+    # Get unique robot types from completed bookings
+    available_robot_types = list(set(
+        booking["robot_type"] for booking in completed_bookings
+    ))
+    
+    return {
+        "available_videos": available_robot_types,
+        "completed_bookings": completed_bookings
+    }
+
 @app.get("/videos/{robot_type}")
 async def get_video(robot_type: str, current_user: dict = Depends(get_current_user)):
     """Serve video files for completed bookings only"""
@@ -433,26 +453,6 @@ async def check_access(current_user: dict = Depends(get_current_user)):
         "completed_bookings": [
             booking for booking in bookings if booking["status"] == "completed"
         ]
-    }
-
-@app.get("/videos/available")
-async def get_available_videos(current_user: dict = Depends(get_current_user)):
-    """Get list of videos available to the current user"""
-    booking_service = service_manager.get_booking_service()
-    user_id = int(current_user["sub"])
-    
-    # Get user's completed bookings
-    bookings = booking_service.get_user_bookings(user_id)
-    completed_bookings = [b for b in bookings if b["status"] == "completed"]
-    
-    # Get unique robot types from completed bookings
-    available_robot_types = list(set(
-        booking["robot_type"] for booking in completed_bookings
-    ))
-    
-    return {
-        "available_videos": available_robot_types,
-        "completed_bookings": completed_bookings
     }
 
 if __name__ == "__main__":
