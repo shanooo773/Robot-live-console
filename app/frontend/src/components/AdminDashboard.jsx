@@ -74,6 +74,7 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
   const [messages, setMessages] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
@@ -100,7 +101,12 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
   }, [authToken]);
 
   const loadDashboardData = async () => {
+    // Prevent multiple concurrent calls
+    if (isLoading) return;
+    
     setIsLoading(true);
+    setHasError(false);
+    
     try {
       const [statsData, usersData, bookingsData, messagesData, announcementsData] = await Promise.all([
         getAdminStats(authToken),
@@ -115,15 +121,21 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
       setBookings(bookingsData);
       setMessages(messagesData);
       setAnnouncements(announcementsData);
+      setHasError(false);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      toast({
-        title: "Error loading dashboard",
-        description: "Failed to load admin dashboard data",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      setHasError(true);
+      
+      // Use setTimeout to ensure toast appears after state updates
+      setTimeout(() => {
+        toast({
+          title: "Error loading dashboard",
+          description: "Failed to load admin dashboard data",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }, 100);
     } finally {
       setIsLoading(false);
     }
@@ -365,71 +377,104 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
         </HStack>
 
         {/* Statistics Cards */}
-        {stats && (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} w="full">
-            <Card bg="blue.900" border="1px solid" borderColor="blue.600">
-              <CardBody>
-                <Stat>
-                  <StatLabel color="blue.100">Total Users</StatLabel>
-                  <StatNumber color="white" fontSize="3xl">{stats.total_users}</StatNumber>
-                  <StatHelpText color="blue.200">Registered users</StatHelpText>
-                </Stat>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} w="full">
+          {isLoading ? (
+            // Loading state for statistics
+            Array.from({ length: 6 }).map((_, index) => (
+              <Card key={index} bg="gray.800" border="1px solid" borderColor="gray.600">
+                <CardBody>
+                  <Stat>
+                    <StatLabel color="gray.400">Loading...</StatLabel>
+                    <StatNumber color="gray.400" fontSize="3xl">--</StatNumber>
+                    <StatHelpText color="gray.500">Please wait</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+            ))
+          ) : hasError ? (
+            // Error state for statistics
+            <Card bg="red.900" border="1px solid" borderColor="red.600" gridColumn="1 / -1">
+              <CardBody textAlign="center">
+                <Text color="red.200" fontSize="lg" mb={2}>❌ Failed to Load Dashboard Statistics</Text>
+                <Text color="red.300" fontSize="sm">Unable to connect to the server. Please check your connection and try again.</Text>
+                <Button 
+                  mt={4} 
+                  colorScheme="red" 
+                  variant="outline" 
+                  onClick={loadDashboardData}
+                  size="sm"
+                >
+                  Retry
+                </Button>
               </CardBody>
             </Card>
+          ) : stats ? (
+            // Success state - show actual statistics
+            <>
+              <Card bg="blue.900" border="1px solid" borderColor="blue.600">
+                <CardBody>
+                  <Stat>
+                    <StatLabel color="blue.100">Total Users</StatLabel>
+                    <StatNumber color="white" fontSize="3xl">{stats.total_users}</StatNumber>
+                    <StatHelpText color="blue.200">Registered users</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
 
-            <Card bg="green.900" border="1px solid" borderColor="green.600">
-              <CardBody>
-                <Stat>
-                  <StatLabel color="green.100">Total Bookings</StatLabel>
-                  <StatNumber color="white" fontSize="3xl">{stats.total_bookings}</StatNumber>
-                  <StatHelpText color="green.200">All time bookings</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
+              <Card bg="green.900" border="1px solid" borderColor="green.600">
+                <CardBody>
+                  <Stat>
+                    <StatLabel color="green.100">Total Bookings</StatLabel>
+                    <StatNumber color="white" fontSize="3xl">{stats.total_bookings}</StatNumber>
+                    <StatHelpText color="green.200">All time bookings</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
 
-            <Card bg="purple.900" border="1px solid" borderColor="purple.600">
-              <CardBody>
-                <Stat>
-                  <StatLabel color="purple.100">Active Bookings</StatLabel>
-                  <StatNumber color="white" fontSize="3xl">{stats.active_bookings}</StatNumber>
-                  <StatHelpText color="purple.200">Currently active</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
+              <Card bg="purple.900" border="1px solid" borderColor="purple.600">
+                <CardBody>
+                  <Stat>
+                    <StatLabel color="purple.100">Active Bookings</StatLabel>
+                    <StatNumber color="white" fontSize="3xl">{stats.active_bookings}</StatNumber>
+                    <StatHelpText color="purple.200">Currently active</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
 
-            <Card bg="cyan.900" border="1px solid" borderColor="cyan.600">
-              <CardBody>
-                <Stat>
-                  <StatLabel color="cyan.100">Messages</StatLabel>
-                  <StatNumber color="white" fontSize="3xl">{stats.total_messages || 0}</StatNumber>
-                  <StatHelpText color="cyan.200">{stats.unread_messages || 0} unread</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
+              <Card bg="cyan.900" border="1px solid" borderColor="cyan.600">
+                <CardBody>
+                  <Stat>
+                    <StatLabel color="cyan.100">Messages</StatLabel>
+                    <StatNumber color="white" fontSize="3xl">{stats.total_messages || 0}</StatNumber>
+                    <StatHelpText color="cyan.200">{stats.unread_messages || 0} unread</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
 
-            <Card bg="teal.900" border="1px solid" borderColor="teal.600">
-              <CardBody>
-                <Stat>
-                  <StatLabel color="teal.100">Announcements</StatLabel>
-                  <StatNumber color="white" fontSize="3xl">{stats.total_announcements || 0}</StatNumber>
-                  <StatHelpText color="teal.200">{stats.active_announcements || 0} active</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
+              <Card bg="teal.900" border="1px solid" borderColor="teal.600">
+                <CardBody>
+                  <Stat>
+                    <StatLabel color="teal.100">Announcements</StatLabel>
+                    <StatNumber color="white" fontSize="3xl">{stats.total_announcements || 0}</StatNumber>
+                    <StatHelpText color="teal.200">{stats.active_announcements || 0} active</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
 
-            <Card bg="orange.900" border="1px solid" borderColor="orange.600">
-              <CardBody>
-                <Stat>
-                  <StatLabel color="orange.100">Utilization</StatLabel>
-                  <StatNumber color="white" fontSize="3xl">
-                    {stats.total_bookings > 0 ? Math.round((stats.active_bookings / stats.total_bookings) * 100) : 0}%
-                  </StatNumber>
-                  <StatHelpText color="orange.200">Active rate</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
-        )}
+              <Card bg="orange.900" border="1px solid" borderColor="orange.600">
+                <CardBody>
+                  <Stat>
+                    <StatLabel color="orange.100">Utilization</StatLabel>
+                    <StatNumber color="white" fontSize="3xl">
+                      {stats.total_bookings > 0 ? Math.round((stats.active_bookings / stats.total_bookings) * 100) : 0}%
+                    </StatNumber>
+                    <StatHelpText color="orange.200">Active rate</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+            </>
+          ) : null}
+        </SimpleGrid>
 
         {/* Recent Users */}
         <Card w="full" bg="gray.800" border="1px solid" borderColor="gray.600">
@@ -450,23 +495,43 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {users.slice(0, 5).map((userData) => (
-                    <Tr key={userData.id}>
-                      <Td color="white">
-                        <HStack>
-                          <Avatar size="xs" name={userData.name} />
-                          <Text>{userData.name}</Text>
-                        </HStack>
+                  {isLoading ? (
+                    <Tr>
+                      <Td colSpan={4} textAlign="center" color="gray.400" py={8}>
+                        Loading users...
                       </Td>
-                      <Td color="gray.300">{userData.email}</Td>
-                      <Td>
-                        <Badge colorScheme={userData.role === 'admin' ? 'purple' : 'blue'}>
-                          {userData.role}
-                        </Badge>
-                      </Td>
-                      <Td color="gray.400">{formatDate(userData.created_at)}</Td>
                     </Tr>
-                  ))}
+                  ) : hasError ? (
+                    <Tr>
+                      <Td colSpan={4} textAlign="center" color="red.400" py={8}>
+                        ❌ Failed to load users data
+                      </Td>
+                    </Tr>
+                  ) : users.length > 0 ? (
+                    users.slice(0, 5).map((userData) => (
+                      <Tr key={userData.id}>
+                        <Td color="white">
+                          <HStack>
+                            <Avatar size="xs" name={userData.name} />
+                            <Text>{userData.name}</Text>
+                          </HStack>
+                        </Td>
+                        <Td color="gray.300">{userData.email}</Td>
+                        <Td>
+                          <Badge colorScheme={userData.role === 'admin' ? 'purple' : 'blue'}>
+                            {userData.role}
+                          </Badge>
+                        </Td>
+                        <Td color="gray.400">{formatDate(userData.created_at)}</Td>
+                      </Tr>
+                    ))
+                  ) : (
+                    <Tr>
+                      <Td colSpan={4} textAlign="center" color="gray.400" py={8}>
+                        No users found
+                      </Td>
+                    </Tr>
+                  )}
                 </Tbody>
               </Table>
             </TableContainer>
@@ -494,53 +559,73 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {bookings.map((booking) => (
-                    <Tr key={booking.id}>
-                      <Td color="white">
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold">{booking.user_name}</Text>
-                          <Text fontSize="xs" color="gray.400">{booking.user_email}</Text>
-                        </VStack>
-                      </Td>
-                      <Td color="gray.300">
-                        <Badge colorScheme="cyan">{booking.robot_type}</Badge>
-                      </Td>
-                      <Td color="gray.300">{formatDate(booking.date)}</Td>
-                      <Td color="gray.300">{booking.start_time} - {booking.end_time}</Td>
-                      <Td>
-                        <Badge colorScheme={getStatusColor(booking.status)}>
-                          {booking.status}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <HStack spacing={2}>
-                          <Menu>
-                            <MenuButton as={Button} size="xs" rightIcon={<ChevronDownIcon />}>
-                              Status
-                            </MenuButton>
-                            <MenuList>
-                              <MenuItem onClick={() => handleUpdateBookingStatus(booking.id, 'active')}>
-                                Mark Active
-                              </MenuItem>
-                              <MenuItem onClick={() => handleUpdateBookingStatus(booking.id, 'completed')}>
-                                Mark Completed
-                              </MenuItem>
-                              <MenuItem onClick={() => handleUpdateBookingStatus(booking.id, 'cancelled')}>
-                                Mark Cancelled
-                              </MenuItem>
-                            </MenuList>
-                          </Menu>
-                          <Button
-                            size="xs"
-                            colorScheme="red"
-                            onClick={() => confirmDeleteBooking(booking)}
-                          >
-                            Delete
-                          </Button>
-                        </HStack>
+                  {isLoading ? (
+                    <Tr>
+                      <Td colSpan={6} textAlign="center" color="gray.400" py={8}>
+                        Loading bookings...
                       </Td>
                     </Tr>
-                  ))}
+                  ) : hasError ? (
+                    <Tr>
+                      <Td colSpan={6} textAlign="center" color="red.400" py={8}>
+                        ❌ Failed to load bookings data
+                      </Td>
+                    </Tr>
+                  ) : bookings.length > 0 ? (
+                    bookings.map((booking) => (
+                      <Tr key={booking.id}>
+                        <Td color="white">
+                          <VStack align="start" spacing={0}>
+                            <Text fontWeight="semibold">{booking.user_name}</Text>
+                            <Text fontSize="xs" color="gray.400">{booking.user_email}</Text>
+                          </VStack>
+                        </Td>
+                        <Td color="gray.300">
+                          <Badge colorScheme="cyan">{booking.robot_type}</Badge>
+                        </Td>
+                        <Td color="gray.300">{formatDate(booking.date)}</Td>
+                        <Td color="gray.300">{booking.start_time} - {booking.end_time}</Td>
+                        <Td>
+                          <Badge colorScheme={getStatusColor(booking.status)}>
+                            {booking.status}
+                          </Badge>
+                        </Td>
+                        <Td>
+                          <HStack spacing={2}>
+                            <Menu>
+                              <MenuButton as={Button} size="xs" rightIcon={<ChevronDownIcon />}>
+                                Status
+                              </MenuButton>
+                              <MenuList>
+                                <MenuItem onClick={() => handleUpdateBookingStatus(booking.id, 'active')}>
+                                  Mark Active
+                                </MenuItem>
+                                <MenuItem onClick={() => handleUpdateBookingStatus(booking.id, 'completed')}>
+                                  Mark Completed
+                                </MenuItem>
+                                <MenuItem onClick={() => handleUpdateBookingStatus(booking.id, 'cancelled')}>
+                                  Mark Cancelled
+                                </MenuItem>
+                              </MenuList>
+                            </Menu>
+                            <Button
+                              size="xs"
+                              colorScheme="red"
+                              onClick={() => confirmDeleteBooking(booking)}
+                            >
+                              Delete
+                            </Button>
+                          </HStack>
+                        </Td>
+                      </Tr>
+                    ))
+                  ) : (
+                    <Tr>
+                      <Td colSpan={6} textAlign="center" color="gray.400" py={8}>
+                        No bookings found
+                      </Td>
+                    </Tr>
+                  )}
                 </Tbody>
               </Table>
             </TableContainer>
@@ -555,7 +640,7 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
                 Contact Messages
               </Text>
               <Badge colorScheme="cyan" fontSize="sm">
-                {messages.filter(m => m.status === 'unread').length} unread
+                {hasError ? 0 : messages.filter(m => m.status === 'unread').length} unread
               </Badge>
             </HStack>
           </CardHeader>
@@ -572,48 +657,68 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {messages.map((message) => (
-                    <Tr key={message.id}>
-                      <Td color="white">{message.name}</Td>
-                      <Td color="gray.300">{message.email}</Td>
-                      <Td>
-                        <Badge colorScheme={message.status === 'read' ? 'green' : 'orange'}>
-                          {message.status}
-                        </Badge>
-                      </Td>
-                      <Td color="gray.300">{formatDate(message.created_at)}</Td>
-                      <Td>
-                        <HStack spacing={2}>
-                          <IconButton
-                            size="xs"
-                            icon={<ViewIcon />}
-                            onClick={() => viewMessage(message)}
-                            aria-label="View message"
-                          />
-                          <Menu>
-                            <MenuButton as={Button} size="xs" rightIcon={<ChevronDownIcon />}>
-                              Status
-                            </MenuButton>
-                            <MenuList>
-                              <MenuItem onClick={() => handleUpdateMessageStatus(message.id, 'read')}>
-                                Mark as Read
-                              </MenuItem>
-                              <MenuItem onClick={() => handleUpdateMessageStatus(message.id, 'unread')}>
-                                Mark as Unread
-                              </MenuItem>
-                            </MenuList>
-                          </Menu>
-                          <IconButton
-                            size="xs"
-                            colorScheme="red"
-                            icon={<DeleteIcon />}
-                            onClick={() => handleDeleteMessage(message.id)}
-                            aria-label="Delete message"
-                          />
-                        </HStack>
+                  {isLoading ? (
+                    <Tr>
+                      <Td colSpan={5} textAlign="center" color="gray.400" py={8}>
+                        Loading messages...
                       </Td>
                     </Tr>
-                  ))}
+                  ) : hasError ? (
+                    <Tr>
+                      <Td colSpan={5} textAlign="center" color="red.400" py={8}>
+                        ❌ Failed to load messages data
+                      </Td>
+                    </Tr>
+                  ) : messages.length > 0 ? (
+                    messages.map((message) => (
+                      <Tr key={message.id}>
+                        <Td color="white">{message.name}</Td>
+                        <Td color="gray.300">{message.email}</Td>
+                        <Td>
+                          <Badge colorScheme={message.status === 'read' ? 'green' : 'orange'}>
+                            {message.status}
+                          </Badge>
+                        </Td>
+                        <Td color="gray.300">{formatDate(message.created_at)}</Td>
+                        <Td>
+                          <HStack spacing={2}>
+                            <IconButton
+                              size="xs"
+                              icon={<ViewIcon />}
+                              onClick={() => viewMessage(message)}
+                              aria-label="View message"
+                            />
+                            <Menu>
+                              <MenuButton as={Button} size="xs" rightIcon={<ChevronDownIcon />}>
+                                Status
+                              </MenuButton>
+                              <MenuList>
+                                <MenuItem onClick={() => handleUpdateMessageStatus(message.id, 'read')}>
+                                  Mark as Read
+                                </MenuItem>
+                                <MenuItem onClick={() => handleUpdateMessageStatus(message.id, 'unread')}>
+                                  Mark as Unread
+                                </MenuItem>
+                              </MenuList>
+                            </Menu>
+                            <IconButton
+                              size="xs"
+                              colorScheme="red"
+                              icon={<DeleteIcon />}
+                              onClick={() => handleDeleteMessage(message.id)}
+                              aria-label="Delete message"
+                            />
+                          </HStack>
+                        </Td>
+                      </Tr>
+                    ))
+                  ) : (
+                    <Tr>
+                      <Td colSpan={5} textAlign="center" color="gray.400" py={8}>
+                        No messages found
+                      </Td>
+                    </Tr>
+                  )}
                 </Tbody>
               </Table>
             </TableContainer>
@@ -650,44 +755,64 @@ const AdminDashboard = ({ user, authToken, onBack, onLogout }) => {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {announcements.map((announcement) => (
-                    <Tr key={announcement.id}>
-                      <Td color="white">{announcement.title}</Td>
-                      <Td>
-                        <Badge 
-                          colorScheme={
-                            announcement.priority === 'high' ? 'red' : 
-                            announcement.priority === 'normal' ? 'blue' : 'gray'
-                          }
-                        >
-                          {announcement.priority}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <Badge colorScheme={announcement.is_active ? 'green' : 'gray'}>
-                          {announcement.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </Td>
-                      <Td color="gray.300">{formatDate(announcement.created_at)}</Td>
-                      <Td>
-                        <HStack spacing={2}>
-                          <IconButton
-                            size="xs"
-                            icon={<EditIcon />}
-                            onClick={() => openAnnouncementModal(announcement)}
-                            aria-label="Edit announcement"
-                          />
-                          <IconButton
-                            size="xs"
-                            colorScheme="red"
-                            icon={<DeleteIcon />}
-                            onClick={() => handleDeleteAnnouncement(announcement.id)}
-                            aria-label="Delete announcement"
-                          />
-                        </HStack>
+                  {isLoading ? (
+                    <Tr>
+                      <Td colSpan={5} textAlign="center" color="gray.400" py={8}>
+                        Loading announcements...
                       </Td>
                     </Tr>
-                  ))}
+                  ) : hasError ? (
+                    <Tr>
+                      <Td colSpan={5} textAlign="center" color="red.400" py={8}>
+                        ❌ Failed to load announcements data
+                      </Td>
+                    </Tr>
+                  ) : announcements.length > 0 ? (
+                    announcements.map((announcement) => (
+                      <Tr key={announcement.id}>
+                        <Td color="white">{announcement.title}</Td>
+                        <Td>
+                          <Badge 
+                            colorScheme={
+                              announcement.priority === 'high' ? 'red' : 
+                              announcement.priority === 'normal' ? 'blue' : 'gray'
+                            }
+                          >
+                            {announcement.priority}
+                          </Badge>
+                        </Td>
+                        <Td>
+                          <Badge colorScheme={announcement.is_active ? 'green' : 'gray'}>
+                            {announcement.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </Td>
+                        <Td color="gray.300">{formatDate(announcement.created_at)}</Td>
+                        <Td>
+                          <HStack spacing={2}>
+                            <IconButton
+                              size="xs"
+                              icon={<EditIcon />}
+                              onClick={() => openAnnouncementModal(announcement)}
+                              aria-label="Edit announcement"
+                            />
+                            <IconButton
+                              size="xs"
+                              colorScheme="red"
+                              icon={<DeleteIcon />}
+                              onClick={() => handleDeleteAnnouncement(announcement.id)}
+                              aria-label="Delete announcement"
+                            />
+                          </HStack>
+                        </Td>
+                      </Tr>
+                    ))
+                  ) : (
+                    <Tr>
+                      <Td colSpan={5} textAlign="center" color="gray.400" py={8}>
+                        No announcements found
+                      </Td>
+                    </Tr>
+                  )}
                 </Tbody>
               </Table>
             </TableContainer>
