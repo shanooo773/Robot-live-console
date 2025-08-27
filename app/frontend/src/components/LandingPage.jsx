@@ -114,8 +114,8 @@ const LandingPage = ({ onGetStarted }) => {
   return (
     <Box 
       minH="100vh"
-      bg="white"
-      color="gray.800"
+      bg="navy.950"
+      color="white"
       position="relative"
       overflow="hidden"
     >
@@ -123,23 +123,36 @@ const LandingPage = ({ onGetStarted }) => {
       <Box
         position="relative"
         minH="100vh"
-        bgGradient="linear(135deg, blue.900 0%, blue.800 25%, blue.700 50%, blue.600 75%, blue.500 100%)"
+        bgGradient="linear(135deg, navy.950 0%, navy.900 25%, navy.800 50%, navy.700 75%, navy.600 100%)"
         overflow="hidden"
       >
-        {/* Background Circuit Pattern */}
+        {/* Enhanced Background Pattern with Modern Circuit Design */}
         <Box
           position="absolute"
           top="0"
           left="0"
           right="0"
           bottom="0"
-          opacity="0.1"
-          backgroundImage="url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><path d=\"M10 10h20v20h-20zM40 10h20v20h-20zM70 10h20v20h-20zM10 40h20v20h-20zM40 40h20v20h-20zM70 40h20v20h-20zM10 70h20v20h-20zM40 70h20v20h-20zM70 70h20v20h-20z\" fill=\"none\" stroke=\"%23ffffff\" stroke-width=\"1\"/></svg>')"
-          backgroundSize="60px 60px"
+          opacity="0.08"
+          backgroundImage="url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><defs><pattern id=\"circuit\" x=\"0\" y=\"0\" width=\"20\" height=\"20\" patternUnits=\"userSpaceOnUse\"><path d=\"M2 2h16v16h-16z\" fill=\"none\" stroke=\"%2300bfff\" stroke-width=\"0.5\"/><circle cx=\"10\" cy=\"10\" r=\"1\" fill=\"%2300bfff\"/><path d=\"M0 10h4m12 0h4M10 0v4m0 12v4\" stroke=\"%2300bfff\" stroke-width=\"0.5\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23circuit)\"/></svg>')"
+          backgroundSize="80px 80px"
           zIndex="0"
         />
         
-        <Container maxW="7xl" position="relative" zIndex="1">
+        {/* Animated Gradient Overlay */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          bgGradient="radial(circle at 30% 70%, electric.500 0%, transparent 50%)"
+          opacity="0.1"
+          animation="pulse 8s ease-in-out infinite"
+          zIndex="1"
+        />
+        
+        <Container maxW="7xl" position="relative" zIndex="2">
           <VStack
             minH="100vh"
             justify="center"
@@ -161,16 +174,21 @@ const LandingPage = ({ onGetStarted }) => {
                 flex="1"
                 textAlign={{ base: "center", lg: "left" }}
               >
-                <VStack spacing={4} align={{ base: "center", lg: "start" }}>
+                <VStack spacing={6} align={{ base: "center", lg: "start" }}>
                   <Text
                     fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
                     fontWeight="900"
                     color="white"
                     lineHeight="1.1"
-                    textShadow="0 4px 20px rgba(0, 0, 0, 0.3)"
+                    textShadow="0 4px 20px rgba(0, 0, 0, 0.5)"
+                    animation="slideInUp 1s ease-out"
                   >
                     Book Your{" "}
-                    <Text as="span" color="cyan.300">
+                    <Text 
+                      as="span" 
+                      bgGradient="linear(135deg, electric.400, electric.600)"
+                      bgClip="text"
+                    >
                       Robot Development
                     </Text>{" "}
                     Console Session
@@ -178,9 +196,10 @@ const LandingPage = ({ onGetStarted }) => {
                   
                   <Text
                     fontSize={{ base: "lg", md: "xl" }}
-                    color="blue.100"
+                    color="whiteAlpha.900"
                     maxW="2xl"
-                    lineHeight="1.6"
+                    lineHeight="1.7"
+                    animation="slideInUp 1s ease-out 0.2s both"
                   >
                     Reserve dedicated time slots to code, test, and simulate robotics projects. 
                     Access professional development environments with ROS, Gazebo, and real-time 
@@ -188,21 +207,19 @@ const LandingPage = ({ onGetStarted }) => {
                   </Text>
                 </VStack>
                 
-                <HStack spacing={6} flexWrap="wrap" justify={{ base: "center", lg: "start" }}>
+                <HStack 
+                  spacing={6} 
+                  flexWrap="wrap" 
+                  justify={{ base: "center", lg: "start" }}
+                  animation="slideInUp 1s ease-out 0.4s both"
+                >
                   <Button
                     size="lg"
-                    px={8}
-                    py={6}
+                    px={10}
+                    py={7}
                     fontSize="lg"
                     fontWeight="bold"
-                    bgGradient="linear(135deg, cyan.400, blue.500)"
-                    color="white"
-                    boxShadow="0 8px 32px rgba(0, 255, 255, 0.3)"
-                    _hover={{
-                      bgGradient: "linear(135deg, cyan.300, blue.400)",
-                      boxShadow: "0 12px 48px rgba(0, 255, 255, 0.4)",
-                      transform: "translateY(-2px)",
-                    }}
+                    variant="solid"
                     leftIcon={<FaArrowRight />}
                     onClick={onGetStarted}
                   >
@@ -211,17 +228,12 @@ const LandingPage = ({ onGetStarted }) => {
                   
                   <Button
                     size="lg"
-                    px={8}
-                    py={6}
+                    px={10}
+                    py={7}
                     fontSize="lg"
                     variant="outline"
-                    borderColor="cyan.300"
+                    borderColor="electric.400"
                     color="white"
-                    _hover={{
-                      bg: "whiteAlpha.200",
-                      borderColor: "cyan.200",
-                      transform: "translateY(-2px)",
-                    }}
                     leftIcon={<FaPhone />}
                   >
                     View Available Slots
@@ -229,13 +241,14 @@ const LandingPage = ({ onGetStarted }) => {
                 </HStack>
               </VStack>
               
-              {/* Right Side - 3D Robot Illustration */}
+              {/* Right Side - Enhanced 3D Robot Illustration */}
               <Box
                 flex="1"
                 display="flex"
                 justify="center"
                 align="center"
                 position="relative"
+                animation="fadeInScale 1s ease-out 0.6s both"
               >
                 <Box
                   position="relative"
@@ -245,24 +258,34 @@ const LandingPage = ({ onGetStarted }) => {
                   align="center"
                   justify="center"
                 >
-                  {/* Glow Effect */}
+                  {/* Enhanced Multi-layer Glow Effect */}
                   <Box
                     position="absolute"
-                    w="300px"
-                    h="300px"
-                    bgGradient="radial(circle, cyan.400 0%, transparent 70%)"
-                    opacity="0.3"
+                    w="350px"
+                    h="350px"
+                    bgGradient="radial(circle, electric.400 0%, transparent 70%)"
+                    opacity="0.4"
                     borderRadius="full"
-                    filter="blur(40px)"
-                    animation="pulse 3s infinite"
+                    filter="blur(60px)"
+                    animation="pulse 4s infinite"
+                  />
+                  <Box
+                    position="absolute"
+                    w="250px"
+                    h="250px"
+                    bgGradient="radial(circle, electric.300 0%, transparent 60%)"
+                    opacity="0.6"
+                    borderRadius="full"
+                    filter="blur(30px)"
+                    animation="pulse 3s infinite 0.5s"
                   />
                   
-                  {/* Robot Icon */}
+                  {/* Enhanced Robot Icon */}
                   <Icon
                     as={FaRobot}
                     fontSize="300px"
-                    color="cyan.300"
-                    filter="drop-shadow(0 10px 30px rgba(0, 255, 255, 0.5))"
+                    color="electric.400"
+                    filter="drop-shadow(0 10px 30px rgba(0, 191, 255, 0.6))"
                     animation="float 6s ease-in-out infinite"
                   />
                 </Box>
@@ -272,66 +295,73 @@ const LandingPage = ({ onGetStarted }) => {
         </Container>
       </Box>
 
-      {/* About Section */}
-      <Container maxW="7xl" py={20}>
-        <HStack
-          spacing={20}
-          align="center"
-          w="full"
-          flexDir={{ base: "column", lg: "row" }}
-        >
-          {/* Left Side - Image */}
-          <Box
-            flex="1"
-            display="flex"
-            justify="center"
+      {/* About Section - Enhanced with Modern Design */}
+      <Box bg="navy.900" py={20}>
+        <Container maxW="7xl">
+          <HStack
+            spacing={20}
             align="center"
-            position="relative"
+            w="full"
+            flexDir={{ base: "column", lg: "row" }}
           >
+            {/* Left Side - Enhanced Card */}
             <Box
-              w="350px"
-              h="350px"
-              bgGradient="linear(135deg, blue.500, cyan.400)"
-              borderRadius="20px"
+              flex="1"
               display="flex"
-              align="center"
               justify="center"
+              align="center"
               position="relative"
-              boxShadow="0 20px 60px rgba(59, 130, 246, 0.3)"
             >
-              <Icon
-                as={FaHandshake}
-                fontSize="200px"
-                color="white"
-                filter="drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2))"
-              />
-            </Box>
-          </Box>
-          
-          {/* Right Side - Text Content */}
-          <VStack
-            align="start"
-            spacing={8}
-            flex="1"
-            textAlign={{ base: "center", lg: "left" }}
-          >
-            <VStack spacing={4} align={{ base: "center", lg: "start" }}>
-              <Text
-                fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
-                fontWeight="900"
-                color="blue.900"
-                lineHeight="1.2"
+              <Card
+                variant="glass"
+                w="400px"
+                h="400px"
+                display="flex"
+                align="center"
+                justify="center"
+                position="relative"
               >
-                Dedicated Development{" "}
-                <Text as="span" color="cyan.500">
-                  Environments
+                <CardBody display="flex" align="center" justify="center">
+                  <Icon
+                    as={FaHandshake}
+                    fontSize="200px"
+                    color="electric.400"
+                    filter="drop-shadow(0 5px 15px rgba(0, 191, 255, 0.3))"
+                    animation="float 4s ease-in-out infinite"
+                  />
+                </CardBody>
+              </Card>
+            </Box>
+            
+            {/* Right Side - Enhanced Text Content */}
+            <VStack
+              align="start"
+              spacing={8}
+              flex="1"
+              textAlign={{ base: "center", lg: "left" }}
+            >
+              <VStack spacing={6} align={{ base: "center", lg: "start" }}>
+                <Text
+                  fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+                  fontWeight="900"
+                  color="white"
+                  lineHeight="1.2"
+                  textShadow="0 2px 10px rgba(0, 0, 0, 0.3)"
+                >
+                  Dedicated Development{" "}
+                  <Text 
+                    as="span" 
+                    bgGradient="linear(135deg, electric.400, electric.600)"
+                    bgClip="text"
+                  >
+                    Environments
                 </Text>
               </Text>
               
               <Text
                 fontSize="lg"
-                color="gray.600"
-                lineHeight="1.6"
+                color="whiteAlpha.800"
+                lineHeight="1.7"
                 maxW="xl"
               >
                 Access professional-grade robotics development environments through our 
@@ -340,25 +370,19 @@ const LandingPage = ({ onGetStarted }) => {
               </Text>
             </VStack>
             
-            {/* Stats/Features */}
+            {/* Enhanced Stats/Features with White Cards */}
             <SimpleGrid columns={{ base: 2, md: 2 }} spacing={6} w="full">
               <Card
-                bg="white"
-                border="2px solid"
-                borderColor="blue.100"
-                borderRadius="15px"
-                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
-                _hover={{
-                  borderColor: "cyan.300",
-                  boxShadow: "0 15px 40px rgba(59, 130, 246, 0.2)",
-                  transform: "translateY(-5px)",
-                }}
-                transition="all 0.3s ease"
+                bg="rgba(255, 255, 255, 0.95)"
+                backdropFilter="blur(20px)"
+                borderRadius="20px"
+                border="1px solid"
+                borderColor="rgba(255, 255, 255, 0.2)"
               >
                 <CardBody textAlign="center" py={6}>
-                  <Icon as={FaUsers} fontSize="3xl" color="cyan.500" mb={3} />
+                  <Icon as={FaUsers} fontSize="3xl" color="electric.500" mb={3} />
                   <Stat>
-                    <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
+                    <StatNumber fontSize="2xl" color="navy.800" fontWeight="bold">
                       24/7
                     </StatNumber>
                     <StatLabel color="gray.600" fontSize="sm">
@@ -369,22 +393,16 @@ const LandingPage = ({ onGetStarted }) => {
               </Card>
               
               <Card
-                bg="white"
-                border="2px solid"
-                borderColor="blue.100"
-                borderRadius="15px"
-                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
-                _hover={{
-                  borderColor: "cyan.300",
-                  boxShadow: "0 15px 40px rgba(59, 130, 246, 0.2)",
-                  transform: "translateY(-5px)",
-                }}
-                transition="all 0.3s ease"
+                bg="rgba(255, 255, 255, 0.95)"
+                backdropFilter="blur(20px)"
+                borderRadius="20px"
+                border="1px solid"
+                borderColor="rgba(255, 255, 255, 0.2)"
               >
                 <CardBody textAlign="center" py={6}>
-                  <Icon as={FaAward} fontSize="3xl" color="cyan.500" mb={3} />
+                  <Icon as={FaAward} fontSize="3xl" color="electric.500" mb={3} />
                   <Stat>
-                    <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
+                    <StatNumber fontSize="2xl" color="navy.800" fontWeight="bold">
                       3
                     </StatNumber>
                     <StatLabel color="gray.600" fontSize="sm">
@@ -395,22 +413,16 @@ const LandingPage = ({ onGetStarted }) => {
               </Card>
               
               <Card
-                bg="white"
-                border="2px solid"
-                borderColor="blue.100"
-                borderRadius="15px"
-                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
-                _hover={{
-                  borderColor: "cyan.300",
-                  boxShadow: "0 15px 40px rgba(59, 130, 246, 0.2)",
-                  transform: "translateY(-5px)",
-                }}
-                transition="all 0.3s ease"
+                bg="rgba(255, 255, 255, 0.95)"
+                backdropFilter="blur(20px)"
+                borderRadius="20px"
+                border="1px solid"
+                borderColor="rgba(255, 255, 255, 0.2)"
               >
                 <CardBody textAlign="center" py={6}>
-                  <Icon as={FaGlobe} fontSize="3xl" color="cyan.500" mb={3} />
+                  <Icon as={FaGlobe} fontSize="3xl" color="electric.500" mb={3} />
                   <Stat>
-                    <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
+                    <StatNumber fontSize="2xl" color="navy.800" fontWeight="bold">
                       ROS+Gazebo
                     </StatNumber>
                     <StatLabel color="gray.600" fontSize="sm">
@@ -421,22 +433,16 @@ const LandingPage = ({ onGetStarted }) => {
               </Card>
               
               <Card
-                bg="white"
-                border="2px solid"
-                borderColor="blue.100"
-                borderRadius="15px"
-                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
-                _hover={{
-                  borderColor: "cyan.300",
-                  boxShadow: "0 15px 40px rgba(59, 130, 246, 0.2)",
-                  transform: "translateY(-5px)",
-                }}
-                transition="all 0.3s ease"
+                bg="rgba(255, 255, 255, 0.95)"
+                backdropFilter="blur(20px)"
+                borderRadius="20px"
+                border="1px solid"
+                borderColor="rgba(255, 255, 255, 0.2)"
               >
                 <CardBody textAlign="center" py={6}>
-                  <Icon as={FaShieldAlt} fontSize="3xl" color="cyan.500" mb={3} />
+                  <Icon as={FaShieldAlt} fontSize="3xl" color="electric.500" mb={3} />
                   <Stat>
-                    <StatNumber fontSize="2xl" color="blue.900" fontWeight="bold">
+                    <StatNumber fontSize="2xl" color="navy.800" fontWeight="bold">
                       Real-time
                     </StatNumber>
                     <StatLabel color="gray.600" fontSize="sm">
@@ -449,78 +455,71 @@ const LandingPage = ({ onGetStarted }) => {
           </VStack>
         </HStack>
       </Container>
+      </Box>
 
-      {/* Services Section */}
-      <Box bg="gray.50" py={20}>
+      {/* Services Section - Enhanced with Modern Dark Theme */}
+      <Box bg="navy.800" py={20}>
         <Container maxW="7xl">
           <VStack spacing={16} w="full">
             <VStack spacing={6} textAlign="center">
               <Text
                 fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
                 fontWeight="900"
-                color="blue.900"
+                color="white"
                 lineHeight="1.2"
                 maxW="4xl"
+                textShadow="0 2px 10px rgba(0, 0, 0, 0.3)"
               >
                 Professional Development{" "}
-                <Text as="span" color="cyan.500">
+                <Text 
+                  as="span" 
+                  bgGradient="linear(135deg, electric.400, electric.600)"
+                  bgClip="text"
+                >
                   Console Features
                 </Text>
               </Text>
               <Text
                 fontSize="lg"
-                color="gray.600"
+                color="whiteAlpha.800"
                 maxW="2xl"
-                lineHeight="1.6"
+                lineHeight="1.7"
               >
                 Book time slots and access dedicated robotics development environments with all the tools you need
               </Text>
             </VStack>
             
             <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={8} w="full">
-              {/* Robotic Automation */}
-              <Card
-                bg="white"
-                border="2px solid"
-                borderColor="blue.100"
-                borderRadius="20px"
-                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
-                _hover={{
-                  borderColor: "cyan.300",
-                  boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
-                  transform: "translateY(-10px)",
-                }}
-                transition="all 0.3s ease"
-                overflow="hidden"
-              >
+              {/* Code Editor Console */}
+              <Card>
                 <CardBody textAlign="center" py={10}>
                   <Box
                     w="80px"
                     h="80px"
-                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    bgGradient="linear(135deg, electric.400, electric.600)"
                     borderRadius="20px"
                     display="flex"
                     align="center"
                     justify="center"
                     mx="auto"
                     mb={6}
+                    boxShadow="0 8px 25px rgba(0, 191, 255, 0.3)"
                   >
                     <Icon as={FaCogs} fontSize="3xl" color="white" />
                   </Box>
                   
-                  <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
+                  <Text fontSize="xl" fontWeight="bold" color="navy.800" mb={4}>
                     Code Editor Console
                   </Text>
                   
-                  <Text color="gray.600" lineHeight="1.6" mb={6}>
+                  <Text color="gray.600" lineHeight="1.7" mb={6}>
                     Professional Monaco editor with Python syntax highlighting, autocomplete, and ROS library support for robotics development.
                   </Text>
                   
                   <Button
                     size="sm"
                     variant="ghost"
-                    color="cyan.500"
-                    _hover={{ bg: "cyan.50" }}
+                    color="electric.500"
                     rightIcon={<FaArrowRight />}
                   >
                     Learn More
@@ -528,49 +527,36 @@ const LandingPage = ({ onGetStarted }) => {
                 </CardBody>
               </Card>
               
-              {/* Machine Learning */}
-              <Card
-                bg="white"
-                border="2px solid"
-                borderColor="blue.100"
-                borderRadius="20px"
-                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
-                _hover={{
-                  borderColor: "cyan.300",
-                  boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
-                  transform: "translateY(-10px)",
-                }}
-                transition="all 0.3s ease"
-                overflow="hidden"
-              >
+              {/* Gazebo Simulation */}
+              <Card>
                 <CardBody textAlign="center" py={10}>
                   <Box
                     w="80px"
                     h="80px"
-                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    bgGradient="linear(135deg, electric.400, electric.600)"
                     borderRadius="20px"
                     display="flex"
                     align="center"
                     justify="center"
                     mx="auto"
                     mb={6}
+                    boxShadow="0 8px 25px rgba(0, 191, 255, 0.3)"
                   >
                     <Icon as={FaBrain} fontSize="3xl" color="white" />
                   </Box>
                   
-                  <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
+                  <Text fontSize="xl" fontWeight="bold" color="navy.800" mb={4}>
                     Gazebo Simulation
                   </Text>
                   
-                  <Text color="gray.600" lineHeight="1.6" mb={6}>
+                  <Text color="gray.600" lineHeight="1.7" mb={6}>
                     Test your robot code in realistic 3D environments with physics simulation and real-time video feedback of your robot's behavior.
                   </Text>
                   
                   <Button
                     size="sm"
                     variant="ghost"
-                    color="cyan.500"
-                    _hover={{ bg: "cyan.50" }}
+                    color="electric.500"
                     rightIcon={<FaArrowRight />}
                   >
                     Learn More
@@ -578,49 +564,36 @@ const LandingPage = ({ onGetStarted }) => {
                 </CardBody>
               </Card>
               
-              {/* Education & Science */}
-              <Card
-                bg="white"
-                border="2px solid"
-                borderColor="blue.100"
-                borderRadius="20px"
-                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
-                _hover={{
-                  borderColor: "cyan.300",
-                  boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
-                  transform: "translateY(-10px)",
-                }}
-                transition="all 0.3s ease"
-                overflow="hidden"
-              >
+              {/* Time Slot Booking */}
+              <Card>
                 <CardBody textAlign="center" py={10}>
                   <Box
                     w="80px"
                     h="80px"
-                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    bgGradient="linear(135deg, electric.400, electric.600)"
                     borderRadius="20px"
                     display="flex"
                     align="center"
                     justify="center"
                     mx="auto"
                     mb={6}
+                    boxShadow="0 8px 25px rgba(0, 191, 255, 0.3)"
                   >
                     <Icon as={FaGraduationCap} fontSize="3xl" color="white" />
                   </Box>
                   
-                  <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
+                  <Text fontSize="xl" fontWeight="bold" color="navy.800" mb={4}>
                     Time Slot Booking
                   </Text>
                   
-                  <Text color="gray.600" lineHeight="1.6" mb={6}>
+                  <Text color="gray.600" lineHeight="1.7" mb={6}>
                     Reserve dedicated development sessions with guaranteed access to computing resources and simulation environments.
                   </Text>
                   
                   <Button
                     size="sm"
                     variant="ghost"
-                    color="cyan.500"
-                    _hover={{ bg: "cyan.50" }}
+                    color="electric.500"
                     rightIcon={<FaArrowRight />}
                   >
                     Learn More
@@ -628,46 +601,68 @@ const LandingPage = ({ onGetStarted }) => {
                 </CardBody>
               </Card>
               
-              {/* Predictive Analysis */}
-              <Card
-                bg="white"
-                border="2px solid"
-                borderColor="blue.100"
-                borderRadius="20px"
-                boxShadow="0 10px 30px rgba(59, 130, 246, 0.1)"
-                _hover={{
-                  borderColor: "cyan.300",
-                  boxShadow: "0 20px 50px rgba(59, 130, 246, 0.2)",
-                  transform: "translateY(-10px)",
-                }}
-                transition="all 0.3s ease"
-                overflow="hidden"
-              >
+              {/* Multi-Robot Support */}
+              <Card>
                 <CardBody textAlign="center" py={10}>
                   <Box
                     w="80px"
                     h="80px"
-                    bgGradient="linear(135deg, cyan.400, blue.500)"
+                    bgGradient="linear(135deg, electric.400, electric.600)"
                     borderRadius="20px"
                     display="flex"
                     align="center"
                     justify="center"
                     mx="auto"
                     mb={6}
+                    boxShadow="0 8px 25px rgba(0, 191, 255, 0.3)"
                   >
                     <Icon as={FaChartLine} fontSize="3xl" color="white" />
                   </Box>
                   
-                  <Text fontSize="xl" fontWeight="bold" color="blue.900" mb={4}>
+                  <Text fontSize="xl" fontWeight="bold" color="navy.800" mb={4}>
                     Multi-Robot Support
                   </Text>
                   
-                  <Text color="gray.600" lineHeight="1.6" mb={6}>
+                  <Text color="gray.600" lineHeight="1.7" mb={6}>
                     Work with TurtleBot navigation, robot arm manipulation, and dexterous hand control in separate booked development sessions.
                   </Text>
                   
                   <Button
                     size="sm"
+                    variant="ghost"
+                    color="electric.500"
+                    rightIcon={<FaArrowRight />}
+                  >
+                    Learn More
+                  </Button>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+          </VStack>
+        </Container>
+      </Box>
+
+      {/* Workflow Section - Enhanced with Modern Glass Effect */}
+      <Box 
+        position="relative"
+        py={20}
+        bgGradient="linear(135deg, navy.900 0%, navy.800 50%, navy.700 100%)"
+        overflow="hidden"
+      >
+        {/* Background Pattern */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          opacity="0.05"
+          backgroundImage="url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"25\" cy=\"25\" r=\"2\" fill=\"%2300bfff\"/><circle cx=\"75\" cy=\"25\" r=\"2\" fill=\"%2300bfff\"/><circle cx=\"25\" cy=\"75\" r=\"2\" fill=\"%2300bfff\"/><circle cx=\"75\" cy=\"75\" r=\"2\" fill=\"%2300bfff\"/></svg>')"
+          backgroundSize="50px 50px"
+          zIndex="0"
+        />
+        
+        <Container maxW="7xl" position="relative" zIndex="1">
                     variant="ghost"
                     color="cyan.500"
                     _hover={{ bg: "cyan.50" }}
