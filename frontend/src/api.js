@@ -2,12 +2,12 @@ import axios from "axios";
 
 // Admin backend API (authentication and booking)
 const ADMIN_API = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: process.env.REACT_APP_ADMIN_API || import.meta.env.VITE_ADMIN_API_URL || "http://localhost:8000",
 });
 
 // Simulation service API (robot simulation)
 const SIMULATION_API = axios.create({
-  baseURL: "http://localhost:8001",
+  baseURL: process.env.REACT_APP_SIMULATION_API || import.meta.env.VITE_SIMULATION_API_URL || "http://localhost:8001",
 });
 
 // Authentication API
