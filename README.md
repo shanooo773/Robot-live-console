@@ -68,6 +68,24 @@ NoVNC Gazebo GUI: http://localhost:8080/vnc.html
 
 VNC password: gazebo
 
+🔑 Demo Credentials
+
+For quick testing, use these demo credentials:
+
+**Demo User:**
+- Email: `demo@user.com`
+- Password: `password`
+
+**Demo Admin:**
+- Email: `admin@demo.com`  
+- Password: `password`
+
+**Default Admin:**
+- Email: `admin@robot-console.com`
+- Password: `admin123`
+
+> See [DEMO_CREDENTIALS.md](DEMO_CREDENTIALS.md) for more details and testing instructions.
+
 🏗️ Architecture
 Robot-live-console/
 ├── frontend/           # React + Vite interface (booking, console)

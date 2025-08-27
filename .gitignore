@@ -66,4 +66,4 @@ Thumbs.db
 .dockerignore
 
 # Local development
-.cache/
+.cache/fresh_env/
