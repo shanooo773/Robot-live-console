@@ -213,6 +213,22 @@ DISABLE_NETWORKING=true
 docker-compose up -d      # Start VNC/NoVNC Gazebo GUI
 docker-compose down       # Stop Gazebo container
 
+🚀 VPS/Production Deployment
+For deploying on a VPS and resolving CORS errors, see: [VPS_CORS_GUIDE.md](VPS_CORS_GUIDE.md)
+
+Common VPS deployment issues:
+- CORS errors during sign-in/sign-up: Configure `CORS_ORIGINS` environment variable
+- Authentication failing: Update frontend API URLs for production
+- Preflight request failures: Ensure proper CORS configuration
+
+Quick VPS setup:
+```bash
+# Copy and configure environment
+cp app/.env.template app/.env
+# Edit app/.env and set:
+# CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://YOUR_VPS_IP
+```
+
 🔒 Security Features
 
 Sandboxed execution in Docker
