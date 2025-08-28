@@ -21,7 +21,7 @@ import {
   AlertIcon,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { loginUser, registerUser } from "../api";
+import { loginUser, registerUser, getDemoAccess } from "../api";
 
 const AuthPage = ({ onAuth, onBack }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -129,6 +129,54 @@ const AuthPage = ({ onAuth, onBack }) => {
         description: error.response?.data?.detail || "Registration failed. Please try again.",
         status: "error",
         duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSkipSignIn = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Get demo access from backend
+      const response = await getDemoAccess();
+      
+      // Store token in localStorage
+      localStorage.setItem('authToken', response.access_token);
+      localStorage.setItem('isDemoUser', 'true');
+      
+      // Navigate to booking page
+      onAuth(response.user, response.access_token);
+      
+      toast({
+        title: "Demo Access Granted",
+        description: "You're now logged in as a demo user. You can explore all features!",
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Demo access error:', error);
+      
+      // Fallback to client-side demo user if backend is not available
+      const demoUser = {
+        username: "demo_user",
+        name: "Demo User",
+        email: "demo.user@example.com",
+        role: "user",
+        isDemoUser: true,
+      };
+      
+      localStorage.setItem('isDemoUser', 'true');
+      onAuth(demoUser, 'demo-token');
+      
+      toast({
+        title: "Demo Access Granted (Offline)",
+        description: "You're now logged in as a demo user in offline mode.",
+        status: "info",
+        duration: 4000,
         isClosable: true,
       });
     } finally {
@@ -292,12 +340,32 @@ const AuthPage = ({ onAuth, onBack }) => {
           </CardBody>
         </Card>
 
-        <Alert status="info" bg="blue.900" color="blue.100" border="1px solid" borderColor="blue.600">
-          <AlertIcon color="blue.300" />
-          <Text fontSize="sm">
-            For demo access, use demo@user.com / password (user) or admin@demo.com / password (admin).
-          </Text>
-        </Alert>
+        <VStack spacing={4} w="full">
+          <Box w="full" textAlign="center">
+            <Text color="gray.400" fontSize="sm" mb={3}>
+              Don't want to create an account?
+            </Text>
+            <Button 
+              colorScheme="purple" 
+              variant="outline"
+              size="lg"
+              w="full"
+              onClick={handleSkipSignIn}
+              isLoading={isLoading}
+              loadingText="Setting up demo..."
+              _hover={{ bg: "purple.700", borderColor: "purple.500" }}
+            >
+              🚀 Skip Sign In - Try Demo Now
+            </Button>
+          </Box>
+
+          <Alert status="info" bg="blue.900" color="blue.100" border="1px solid" borderColor="blue.600">
+            <AlertIcon color="blue.300" />
+            <Text fontSize="sm">
+              Demo mode gives you full access to explore the robot programming console without creating an account.
+            </Text>
+          </Alert>
+        </VStack>
 
         <Button variant="ghost" onClick={onBack} color="gray.400">
           ← Back to Home

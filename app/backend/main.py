@@ -186,10 +186,53 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="User not found")
     return UserResponse(**user)
 
+@app.post("/auth/demo", response_model=TokenResponse)
+async def demo_login():
+    """Create a demo user session for immediate access"""
+    auth_service = service_manager.get_auth_service()
+    
+    # Create a temporary demo user token without storing in database
+    demo_user = {
+        "id": 9999,
+        "name": "Demo User",
+        "email": "demo@user.com",
+        "role": "user",
+        "is_demo": True
+    }
+    
+    # Create access token
+    access_token = auth_service.create_access_token(data={
+        "sub": str(demo_user["id"]),
+        "email": demo_user["email"],
+        "name": demo_user["name"],
+        "role": demo_user["role"],
+        "is_demo": True
+    })
+    
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserResponse(**demo_user)
+    )
+
 # Booking Endpoints
 @app.post("/bookings", response_model=BookingResponse)
 async def create_booking(booking_data: BookingCreate, current_user: dict = Depends(get_current_user)):
     """Create a new booking"""
+    # Demo users get immediate completed bookings
+    if current_user.get("is_demo", False):
+        demo_booking = {
+            "id": 1,
+            "user_id": int(current_user["sub"]),
+            "robot_type": booking_data.robot_type,
+            "date": booking_data.date,
+            "start_time": booking_data.start_time,
+            "end_time": booking_data.end_time,
+            "status": "completed",
+            "created_at": "2024-01-01T10:00:00Z"
+        }
+        return BookingResponse(**demo_booking)
+    
     booking_service = service_manager.get_booking_service()
     user_id = int(current_user["sub"])
     booking = booking_service.create_booking(
@@ -204,6 +247,32 @@ async def create_booking(booking_data: BookingCreate, current_user: dict = Depen
 @app.get("/bookings", response_model=List[BookingResponse])
 async def get_user_bookings(current_user: dict = Depends(get_current_user)):
     """Get current user's bookings"""
+    # Demo users get mock completed bookings
+    if current_user.get("is_demo", False):
+        demo_bookings = [
+            {
+                "id": 1,
+                "user_id": int(current_user["sub"]),
+                "robot_type": "turtlebot",
+                "date": "2024-01-01",
+                "start_time": "10:00",
+                "end_time": "11:00",
+                "status": "completed",
+                "created_at": "2024-01-01T10:00:00Z"
+            },
+            {
+                "id": 2,
+                "user_id": int(current_user["sub"]),
+                "robot_type": "arm",
+                "date": "2024-01-02",
+                "start_time": "14:00",
+                "end_time": "15:00",
+                "status": "completed",
+                "created_at": "2024-01-02T14:00:00Z"
+            }
+        ]
+        return [BookingResponse(**booking) for booking in demo_bookings]
+    
     booking_service = service_manager.get_booking_service()
     user_id = int(current_user["sub"])
     bookings = booking_service.get_user_bookings(user_id)
@@ -437,6 +506,23 @@ async def get_video(robot_type: str, current_user: dict = Depends(get_current_us
 @app.get("/access/check")
 async def check_access(current_user: dict = Depends(get_current_user)):
     """Check if user has access to Monaco Editor and VPS iframe"""
+    # Demo users get immediate access
+    if current_user.get("is_demo", False):
+        return {
+            "has_access": True,
+            "user_id": int(current_user["sub"]),
+            "completed_bookings": [{
+                "id": 1,
+                "robot_type": "turtlebot",
+                "date": "2024-01-01",
+                "start_time": "10:00",
+                "end_time": "11:00",
+                "status": "completed",
+                "created_at": "2024-01-01T10:00:00Z"
+            }],
+            "demo_user": True
+        }
+    
     booking_service = service_manager.get_booking_service()
     user_id = int(current_user["sub"])
     

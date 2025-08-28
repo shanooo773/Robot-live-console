@@ -56,6 +56,11 @@ export const getCurrentUser = async (token) => {
   return response.data;
 };
 
+export const getDemoAccess = async () => {
+  const response = await API.post("/auth/demo");
+  return response.data;
+};
+
 // Booking API
 export const createBooking = async (bookingData, token) => {
   const response = await API.post("/bookings", bookingData);

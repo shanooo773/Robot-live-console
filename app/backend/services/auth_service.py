@@ -158,3 +158,7 @@ class AuthService:
     def verify_admin_role(self, user: Dict[str, Any]) -> bool:
         """Verify if user has admin role"""
         return user.get("role") == "admin"
+    
+    def create_access_token(self, data: Dict[str, Any]) -> str:
+        """Create an access token with given data"""
+        return self.auth_manager.create_access_token(data)
