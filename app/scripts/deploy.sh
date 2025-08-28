@@ -406,47 +406,168 @@ install_production_deps() {
 # Function to create systemd service files
 create_systemd_services() {
     if command_exists systemctl; then
-        print_status "Creating systemd service files..."
+        print_status "Creating enhanced systemd service files..."
         
-        # Backend service
+        # Get current user and working directory
+        CURRENT_USER=${USER}
+        WORKING_DIR=$(pwd)
+        
+        # Backend service with enhanced configuration
         cat > robot-console-backend.service << EOF
 [Unit]
-Description=Robot Console Backend
-After=network.target
+Description=Robot Console Backend API Server
+Documentation=https://github.com/shanooo773/Robot-live-console
+After=network.target network-online.target
+Wants=network-online.target
+Requires=network.target
 
 [Service]
 Type=simple
-User=\${USER}
-WorkingDirectory=$(pwd)/backend
-Environment=PATH=$(pwd)/backend/venv/bin
-ExecStart=$(pwd)/backend/venv/bin/gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$BACKEND_PORT
+User=$CURRENT_USER
+Group=$CURRENT_USER
+WorkingDirectory=$WORKING_DIR/backend
+Environment=PATH=$WORKING_DIR/backend/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EnvironmentFile=-$WORKING_DIR/.env
+ExecStart=$WORKING_DIR/backend/venv/bin/gunicorn main:app \\
+    --workers 4 \\
+    --worker-class uvicorn.workers.UvicornWorker \\
+    --bind 0.0.0.0:$BACKEND_PORT \\
+    --timeout 120 \\
+    --keepalive 5 \\
+    --max-requests 1000 \\
+    --max-requests-jitter 100 \\
+    --preload \\
+    --log-level info \\
+    --access-logfile $WORKING_DIR/backend/logs/access.log \\
+    --error-logfile $WORKING_DIR/backend/logs/error.log
+ExecReload=/bin/kill -s HUP \$MAINPID
+ExecStop=/bin/kill -s TERM \$MAINPID
 Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=$WORKING_DIR/backend/logs $WORKING_DIR/backend/videos $WORKING_DIR/backend/temp
+CapabilityBoundingSet=
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Health checks
+TimeoutStartSec=30
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target
 EOF
         
-        # Frontend service
+        # Frontend service with enhanced configuration
         cat > robot-console-frontend.service << EOF
 [Unit]
-Description=Robot Console Frontend
-After=network.target
+Description=Robot Console Frontend Server
+Documentation=https://github.com/shanooo773/Robot-live-console
+After=network.target robot-console-backend.service
+Wants=robot-console-backend.service
 
 [Service]
 Type=simple
-User=\${USER}
-WorkingDirectory=$(pwd)/frontend
-ExecStart=/usr/local/bin/serve -s dist -l $FRONTEND_PORT
+User=$CURRENT_USER
+Group=$CURRENT_USER
+WorkingDirectory=$WORKING_DIR/frontend
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EnvironmentFile=-$WORKING_DIR/.env
+ExecStart=/usr/local/bin/serve -s dist -l $FRONTEND_PORT --no-clipboard --no-compression
+ExecReload=/bin/kill -s HUP \$MAINPID
+ExecStop=/bin/kill -s TERM \$MAINPID
 Restart=always
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=$WORKING_DIR/frontend/logs
+CapabilityBoundingSet=
+
+# Resource limits
+LimitNOFILE=4096
+LimitNPROC=1024
+
+# Health checks
+TimeoutStartSec=15
+TimeoutStopSec=15
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+        # Create a monitoring service
+        cat > robot-console-monitor.service << EOF
+[Unit]
+Description=Robot Console Health Monitor
+After=robot-console-backend.service robot-console-frontend.service
+Wants=robot-console-backend.service robot-console-frontend.service
+
+[Service]
+Type=oneshot
+User=$CURRENT_USER
+WorkingDirectory=$WORKING_DIR
+ExecStart=/bin/bash -c '\\
+    echo "\$(date): Checking Robot Console services..." >> $WORKING_DIR/logs/monitor.log && \\
+    curl -f http://localhost:$BACKEND_PORT/health >> $WORKING_DIR/logs/monitor.log 2>&1 && \\
+    curl -f http://localhost:$FRONTEND_PORT/ >> $WORKING_DIR/logs/monitor.log 2>&1 && \\
+    echo "\$(date): All services healthy" >> $WORKING_DIR/logs/monitor.log'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+        # Create a timer for the monitor
+        cat > robot-console-monitor.timer << EOF
+[Unit]
+Description=Robot Console Health Monitor Timer
+Requires=robot-console-monitor.service
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
+EOF
         
-        print_status "Systemd service files created"
-        print_warning "To install services, run:"
-        print_warning "  sudo cp robot-console-*.service /etc/systemd/system/"
-        print_warning "  sudo systemctl enable robot-console-backend"
+        print_status "Enhanced systemd service files created:"
+        print_status "  - robot-console-backend.service (API server with auto-restart)"
+        print_status "  - robot-console-frontend.service (Frontend server with auto-restart)"
+        print_status "  - robot-console-monitor.service (Health monitoring)"
+        print_status "  - robot-console-monitor.timer (Monitoring schedule)"
+        print_warning ""
+        print_warning "Installation commands:"
+        print_warning "  sudo cp robot-console-*.service robot-console-*.timer /etc/systemd/system/"
+        print_warning "  sudo systemctl daemon-reload"
+        print_warning "  sudo systemctl enable robot-console-backend robot-console-frontend"
+        print_warning "  sudo systemctl enable robot-console-monitor.timer"
+        print_warning "  sudo systemctl start robot-console-backend robot-console-frontend"
+        print_warning "  sudo systemctl start robot-console-monitor.timer"
+        print_warning ""
+        print_warning "Monitoring commands:"
+        print_warning "  sudo systemctl status robot-console-backend"
+        print_warning "  sudo journalctl -u robot-console-backend -f"
+        print_warning "  tail -f $WORKING_DIR/backend/logs/access.log"
+    else
+        print_warning "Systemctl not found. Systemd services not available."
+    fi
+}
         print_warning "  sudo systemctl enable robot-console-frontend"
         print_warning "  sudo systemctl start robot-console-backend"
         print_warning "  sudo systemctl start robot-console-frontend"
