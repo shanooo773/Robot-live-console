@@ -41,6 +41,10 @@ backend_test_env/
 admin-backend/venv/
 simulation-service/venv/
 
+# Test environments
+test_env/
+backend_test/
+
 # Video files and temporary data
 backend/videos/*.mp4
 backend/temp/

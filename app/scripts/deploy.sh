@@ -12,10 +12,19 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Default values
+# Default values (will be overridden by .env if present)
 BACKEND_PORT=8000
-FRONTEND_PORT=3000
+FRONTEND_PORT=5173
 PRODUCTION_MODE=false
+
+# Load environment variables if .env exists
+if [ -f ".env" ]; then
+    print_status "Loading environment variables from .env..."
+    export $(grep -v '^#' .env | xargs)
+    BACKEND_PORT=${BACKEND_PORT:-8000}
+    FRONTEND_PORT=${FRONTEND_PORT:-5173}
+    PRODUCTION_MODE=${PRODUCTION_MODE:-false}
+fi
 
 # Function to print colored output
 print_status() {
@@ -37,6 +46,67 @@ print_error() {
 # Function to check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
+}
+
+# Function to check if port is in use
+is_port_in_use() {
+    local port=$1
+    if command_exists lsof; then
+        lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1
+    elif command_exists netstat; then
+        netstat -ln | grep ":$port " >/dev/null 2>&1
+    elif command_exists ss; then
+        ss -ln | grep ":$port " >/dev/null 2>&1
+    else
+        # Fallback: try to connect to the port
+        (echo >/dev/tcp/localhost/$port) >/dev/null 2>&1
+    fi
+}
+
+# Function to find an available port
+find_available_port() {
+    local start_port=$1
+    local max_attempts=${2:-10}
+    
+    for i in $(seq 0 $((max_attempts - 1))); do
+        local test_port=$((start_port + i))
+        if ! is_port_in_use $test_port; then
+            echo $test_port
+            return 0
+        fi
+    done
+    
+    print_error "Could not find available port starting from $start_port"
+    return 1
+}
+
+# Function to validate and update ports
+validate_ports() {
+    print_status "Validating port configuration..."
+    
+    if is_port_in_use $BACKEND_PORT; then
+        print_warning "Backend port $BACKEND_PORT is in use"
+        NEW_BACKEND_PORT=$(find_available_port $BACKEND_PORT)
+        if [ $? -eq 0 ]; then
+            print_status "Using alternative backend port: $NEW_BACKEND_PORT"
+            BACKEND_PORT=$NEW_BACKEND_PORT
+        else
+            exit 1
+        fi
+    fi
+    
+    if is_port_in_use $FRONTEND_PORT; then
+        print_warning "Frontend port $FRONTEND_PORT is in use"
+        NEW_FRONTEND_PORT=$(find_available_port $FRONTEND_PORT)
+        if [ $? -eq 0 ]; then
+            print_status "Using alternative frontend port: $NEW_FRONTEND_PORT"
+            FRONTEND_PORT=$NEW_FRONTEND_PORT
+        else
+            exit 1
+        fi
+    fi
+    
+    print_success "Port validation completed - Backend: $BACKEND_PORT, Frontend: $FRONTEND_PORT"
 }
 
 # Function to deploy backend
@@ -132,15 +202,147 @@ setup_nginx() {
     if command_exists nginx; then
         print_status "Setting up nginx configuration..."
         
-        # Create nginx config for the app
+        # Get domain/server name from environment or use localhost
+        SERVER_NAME=${SERVER_NAME:-localhost}
+        
+        # Create enhanced nginx config for the app
         cat > robot-console-app.nginx.conf << EOF
+# Robot Console Nginx Configuration
+upstream backend {
+    server localhost:$BACKEND_PORT;
+}
+
+upstream frontend {
+    server localhost:$FRONTEND_PORT;
+}
+
+# HTTP server block (redirects to HTTPS if SSL is enabled)
 server {
     listen 80;
-    server_name localhost;
+    server_name $SERVER_NAME;
+    
+    # Security headers
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    
+    # Handle Let's Encrypt challenges
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    
+    # If HTTPS is enabled, redirect HTTP to HTTPS
+    location / {
+        if (\$scheme = http) {
+            return 301 https://\$server_name\$request_uri;
+        }
+    }
+}
+
+# HTTPS server block (uncomment and configure for production)
+server {
+    listen 443 ssl http2;
+    server_name $SERVER_NAME;
+    
+    # SSL configuration (update paths as needed)
+    # ssl_certificate /etc/letsencrypt/live/$SERVER_NAME/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/$SERVER_NAME/privkey.pem;
+    
+    # SSL security settings
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied expired no-cache no-store private must-revalidate auth;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
 
     # Frontend
     location / {
-        proxy_pass http://localhost:$FRONTEND_PORT;
+        proxy_pass http://frontend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        
+        # Handle CORS preflight
+        if (\$request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' '*';
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization';
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain; charset=utf-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+    }
+
+    # Backend API (no rewrite, direct proxy)
+    location /api/ {
+        proxy_pass http://backend/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        
+        # CORS headers for API calls
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+    }
+
+    # Backend direct access (docs, health checks)
+    location ~ ^/(docs|openapi.json|health|robots) {
+        proxy_pass http://backend;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+    
+    # WebSocket support for real-time features
+    location /ws {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 86400;
+    }
+}
+
+# HTTP-only configuration for development/testing
+server {
+    listen 8080;
+    server_name $SERVER_NAME;
+    
+    # Same configuration as HTTPS but without SSL
+    location / {
+        proxy_pass http://frontend;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -151,23 +353,9 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
 
-    # Backend API
-    location /api {
-        rewrite ^/api/(.*) /\$1 break;
-        proxy_pass http://localhost:$BACKEND_PORT;
+    location /api/ {
+        proxy_pass http://backend/;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-    }
-
-    # Backend direct access
-    location /docs {
-        proxy_pass http://localhost:$BACKEND_PORT;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -176,8 +364,19 @@ server {
 }
 EOF
         
-        print_status "Nginx configuration created: robot-console-app.nginx.conf"
-        print_warning "Please copy this configuration to your nginx sites-available directory"
+        print_status "Enhanced Nginx configuration created: robot-console-app.nginx.conf"
+        print_warning "To enable this configuration:"
+        print_warning "  1. Copy to nginx sites-available: sudo cp robot-console-app.nginx.conf /etc/nginx/sites-available/"
+        print_warning "  2. Create symbolic link: sudo ln -s /etc/nginx/sites-available/robot-console-app.nginx.conf /etc/nginx/sites-enabled/"
+        print_warning "  3. Test configuration: sudo nginx -t"
+        print_warning "  4. Reload nginx: sudo systemctl reload nginx"
+        print_warning ""
+        print_warning "For HTTPS (production):"
+        print_warning "  1. Install certbot: sudo apt install certbot python3-certbot-nginx"
+        print_warning "  2. Get SSL certificate: sudo certbot --nginx -d $SERVER_NAME"
+        print_warning "  3. Uncomment SSL lines in the configuration"
+    else
+        print_warning "Nginx not found. Install nginx for reverse proxy support."
     fi
 }
 
@@ -362,6 +561,9 @@ main() {
         print_error "npm is required but not installed"
         exit 1
     fi
+    
+    # Validate and update ports if necessary
+    validate_ports
     
     # Install production dependencies if needed
     if [ "$PRODUCTION_MODE" = true ]; then
