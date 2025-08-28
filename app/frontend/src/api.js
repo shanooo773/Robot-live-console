@@ -189,8 +189,3 @@ export const deleteAnnouncement = async (announcementId, token) => {
   const response = await API.delete(`/announcements/${announcementId}`);
   return response.data;
 };
-
-export const deleteAnnouncement = async (announcementId, token) => {
-  const response = await API.delete(`/announcements/${announcementId}`);
-  return response.data;
-};

@@ -197,7 +197,8 @@ async def demo_login():
         "name": "Demo User",
         "email": "demo@user.com",
         "role": "user",
-        "is_demo": True
+        "is_demo": True,
+        "created_at": "2024-01-01T10:00:00Z"
     }
     
     # Create access token
@@ -212,7 +213,7 @@ async def demo_login():
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        user=UserResponse(**demo_user)
+        user=demo_user  # Pass the dict directly, not UserResponse instance
     )
 
 # Booking Endpoints
